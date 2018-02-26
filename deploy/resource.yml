@@ -1,0 +1,99 @@
+---
+ - name: zhongyi deploy
+   hosts: resource_servers
+   remote_user: zhongyi
+   vars:
+        environment_type: devonline
+        git_tmp_dir: /tmp/zhongyi
+        dest_dir: /home/zhongyi/server/
+        PROCESS: resource-0.0.1-SNAPSHOT.jar
+        
+   environment:
+        JAVA_HOME: /home/zhongyi/soft/jdk1.8.0_152
+        JRE_HOME: $JAVA_HOME/jre
+        CLASSPATH: .:$JAVA_HOME/lib:$JRE_HOME/lib
+
+   tasks:
+     - name: load source from https://git.7hu.cn/zhongyi.git to {{git_tmp_dir}}
+       git:
+         repo: 'https://yangxiongnan:MhxzKhl@git.7hu.cn/zhongyi.git'
+         dest: "{{ git_tmp_dir }}"
+         update: yes
+         force: yes
+
+     - name: package
+       shell: mvn package -P {{ environment_type }} -f {{ git_tmp_dir }}/resource.meilitech.com/www/resource
+
+     - name: "create dir:{{ dest_dir }}"
+       file:
+           path: "{{ dest_dir }}"
+           state: directory
+           mode: 0755
+   
+     - name: "create dir:{{ dest_dir }}/logs"
+       file:
+           path: "{{ dest_dir }}/logs"
+           state: directory
+           mode: 0755
+
+     - name: "deploy {{ dest_dir }}"
+       copy:  
+           src: "{{ git_tmp_dir }}/resource.meilitech.com/www/resource/target/resource-0.0.1-SNAPSHOT.jar"
+           dest: "{{dest_dir}}"
+           remote_src: yes
+
+     - name: change file model
+       file: 
+         path: "{{dest_dir}}/resource-0.0.1-SNAPSHOT.jar"
+         mode: "u+x"
+
+     - name: stop server
+       uri:
+        url: http://localhost:8080/shutdown
+        method: POST
+        timeout: 60
+        return_content: yes
+       register: command_result
+       ignore_errors: True
+
+     - name: stop server
+       uri:
+        url: http://localhost:8181/shutdown
+        method: POST
+        timeout: 60
+        return_content: yes
+       register: command_result
+       ignore_errors: True
+
+     - name: Get running processes
+       shell: "ps -ef | grep -v grep | grep -w {{ PROCESS }} | awk '{print $2}'"
+       register: running_processes
+
+     - name: Kill running processes
+       shell: "kill {{ item }}"
+       with_items: "{{ running_processes.stdout_lines }}"
+
+     - wait_for:
+         path: "/proc/{{ item }}/status"
+         state: absent
+       with_items: "{{ running_processes.stdout_lines }}"
+       ignore_errors: yes
+       register: killed_processes
+
+     - name: Force kill stuck processes
+       shell: "kill -9 {{ item }}"
+       with_items: "{{ killed_processes.results | select('failed') | map(attribute='item') | list }}"
+
+     #- name: aaaa server
+      # set_fact: flag = failed
+      # when: "'FAILED1' != command_result.stderr"
+
+     - name: start server 8080
+       shell: nohup ./resource-0.0.1-SNAPSHOT.jar >> logs/`date +"%Y_%m_%d.log"` 2>>logs/`date +"%Y_%m_%d.err"` & 
+       args: 
+          chdir: "{{dest_dir}}"
+
+     - name: start server 8181
+       shell: nohup java -Dserver.port=8181 -jar ./resource-0.0.1-SNAPSHOT.jar >> logs/`date +"%Y_%m_%d.8181.log"` 2>>logs/`date +"%Y_%m_%d.8181.err"` &
+       args:
+          chdir: "{{dest_dir}}"
