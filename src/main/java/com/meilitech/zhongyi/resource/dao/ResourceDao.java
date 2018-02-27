@@ -1,7 +1,6 @@
 
 package com.meilitech.zhongyi.resource.dao;
 
-import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,8 +8,8 @@ import org.springframework.data.cassandra.mapping.Column;
 import org.springframework.data.cassandra.mapping.PrimaryKey;
 import org.springframework.data.cassandra.mapping.Table;
 
-
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.UUID;
 
@@ -36,13 +35,15 @@ public class ResourceDao {
 
     public enum Provider {
         NEWSPRIDER("inner_spider_news_01"), TASKCENTER("task_center");
-        // 定义私有变量
         private String nCode;
 
-        // 构造函数，枚举类型只能为私有
-        private Provider(String _nCode) {
+        /**
+         * 构造函数，枚举类型只能为私有
+         * @param nCode
+         */
+        Provider(String nCode) {
 
-            this.nCode = _nCode;
+            this.nCode = nCode;
 
         }
 

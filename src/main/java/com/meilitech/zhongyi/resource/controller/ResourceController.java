@@ -2,48 +2,38 @@ package com.meilitech.zhongyi.resource.controller;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.datastax.driver.core.*;
+import com.datastax.driver.core.PagingState;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.exceptions.ReadFailureException;
-import com.datastax.driver.core.querybuilder.Clause;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.meilitech.zhongyi.resource.constants.SysError;
 import com.meilitech.zhongyi.resource.dao.ResourceDao;
 import com.meilitech.zhongyi.resource.dao.ResourceRepository;
-import com.meilitech.zhongyi.resource.dao.UrlDao;
 import com.meilitech.zhongyi.resource.dao.UrlRepository;
 import com.meilitech.zhongyi.resource.service.ResourceService;
-import com.meilitech.zhongyi.resource.util.FileUtil;
-import com.meilitech.zhongyi.resource.util.RedissonUtil;
 import com.meilitech.zhongyi.resource.util.ResponseTemplate;
-import com.meilitech.zhongyi.resource.util.ToolsUtil;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.core.env.Environment;
-import org.springframework.dao.DataAccessException;
 import org.springframework.data.cassandra.convert.CassandraConverter;
-
 import org.springframework.data.cassandra.core.CassandraOperations;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpEntity;
-import org.springframework.web.bind.annotation.*;
-
-
-import javax.servlet.http.HttpServletRequest;
-import java.io.*;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 @RequestMapping("/resource")
 @RestController
@@ -196,7 +186,9 @@ public class ResourceController {
                 rankMax = Integer.valueOf((String) request.getOrDefault("rankMax", "0"));
 
                 ArrayList rankList = new ArrayList();
-                for (int i = rankMin; i <= rankMax; i++) rankList.add(i);
+                for (int i = rankMin; i <= rankMax; i++) {
+                    rankList.add( i );
+                }
                 select.where(QueryBuilder.in("rank", rankList));
             }
 

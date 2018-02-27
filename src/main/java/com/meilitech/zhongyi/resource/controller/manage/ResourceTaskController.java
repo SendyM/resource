@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+/**
+ * @author zhongyi
+ */
 @RequestMapping("/manage")
 @Controller
 @EnableAutoConfiguration
@@ -41,34 +44,35 @@ public class ResourceTaskController {
 
         ArrayList<String[]> data = new ArrayList<String[]>();
 
-        for (int i = 0; i < taskList.size(); i++) {
+        for (UrlStatisticsDao aTaskList : taskList) {
             String[] item = new String[5];
-            item[0] = taskList.get(i).getProvider();
-            item[1] = taskList.get(i).getDomain();
-            item[2] = taskList.get(i).getResourceTaskId();
-            item[3] = taskList.get(i).getYmd().toString();
-            item[4] = taskList.get(i).getDayUpdateCount().toString();
-            data.add(item);
+            item[0] = aTaskList.getProvider();
+            item[1] = aTaskList.getDomain();
+            item[2] = aTaskList.getResourceTaskId();
+            item[3] = aTaskList.getYmd().toString();
+            item[4] = aTaskList.getDayUpdateCount().toString();
+            data.add( item );
         }
         HashMap<String, ArrayList<String[]>> res = new HashMap<>();
         res.put("data", data);
         return res;
     }
 
-    /*
-     查询域名每天的更新量
+    /**
+     *查询域名每天的更新量
      */
     @RequestMapping("/api/resource")
     @ResponseBody
     public HashMap<String, ArrayList<String[]>> apiResource(Model model) {
-        //List<ResourceDao> domainList = resourceRepository.getData(50);
-
+        /* List<ResourceDao> domainList = resourceRepository.getData(50); */
 
         Date d1 = null;
         Date d2 = null;
         try {
-            d1 = new SimpleDateFormat("yyyyMMdd").parse("20170115");//定义起始日期
-            d2 = new Date();//定义结束日期
+            //定义起始日期
+            d1 = new SimpleDateFormat("yyyyMMdd").parse("20170115");
+            //定义结束日期
+            d2 = new Date();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -76,23 +80,25 @@ public class ResourceTaskController {
 
         HashMap<String, ArrayList<String[]>> res = new HashMap<>();
         ArrayList<String[]> data = new ArrayList<String[]>();
-
-        Calendar dd = Calendar.getInstance();//定义日期实例
-
-        dd.setTime(d1);//设置日期起始时间
-
-        while (dd.getTime().before(d2)) {//判断是否到结束日期
+        //定义日期实例
+        Calendar dd = Calendar.getInstance();
+        //设置日期起始时间
+        dd.setTime(d1);
+        //判断是否到结束日期
+        while (dd.getTime().before(d2)) {
 
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 
             String yyyyMMdd = sdf.format(dd.getTime());
 
-            //System.out.println(yyyyMMdd);//输出日期结果
+            //System.out.println(yyyyMMdd);输出日期结果
             String[] line = new String[3];
             List<ResourceStatisticsDao> data2 = resourceStatisticsRepository.getListByDay(yyyyMMdd);
 
             dd.add(Calendar.DATE, 1);
-            if (data2.get(0).getYmd() == null) continue;
+            if (data2.get(0).getYmd() == null) {
+                continue;
+            }
             line[0] = data2.get(0).getYmd().toString();
             line[1] = data2.get(0).getDayUpdateCount().toString();
             line[2] = "<a href='/resource/detail?ymd=" + line[0] + "'>点击查看</a>";
@@ -122,11 +128,11 @@ public class ResourceTaskController {
         ArrayList<String[]> data = new ArrayList<String[]>();
 
 
-        for (int i = 0; i < domainList.size(); i++) {
+        for (ResourceDao aDomainList : domainList) {
             String[] line = new String[2];
-            line[0] = domainList.get(i).getDomain();
-            line[1] = domainList.get(i).getYmd().toString();
-            data.add(line);
+            line[0] = aDomainList.getDomain();
+            line[1] = aDomainList.getYmd().toString();
+            data.add( line );
         }
 
         res.put("data", data);

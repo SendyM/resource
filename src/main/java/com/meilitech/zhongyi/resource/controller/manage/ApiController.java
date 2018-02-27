@@ -1,28 +1,19 @@
 package com.meilitech.zhongyi.resource.controller.manage;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.meilitech.zhongyi.resource.controller.ResourceController;
-import com.meilitech.zhongyi.resource.dao.ResourceDetailRepository;
-import com.meilitech.zhongyi.resource.dao.DomainSourceDao;
 import com.meilitech.zhongyi.resource.dao.DomainSourceRepository;
+import com.meilitech.zhongyi.resource.dao.ResourceDetailRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.core.env.Environment;
-import org.springframework.http.HttpEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Map;
-import java.util.UUID;
-
+/**
+ * @author zhongyi
+ */
 @RequestMapping("/manage")
 @EnableAutoConfiguration
 @RestController
