@@ -1,30 +1,20 @@
 package com.meilitech.zhongyi.resource.task;
 
-import java.io.*;
-import java.net.URL;
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.util.*;
-
 import com.meilitech.zhongyi.resource.dao.ResourceDao;
 import com.meilitech.zhongyi.resource.dao.ResourceRepository;
-import com.meilitech.zhongyi.resource.dao.UrlDao;
-import com.meilitech.zhongyi.resource.dao.UrlRepository;
 import com.meilitech.zhongyi.resource.exception.UserException;
 import com.meilitech.zhongyi.resource.service.ResourceService;
-import com.meilitech.zhongyi.resource.service.UrlService;
-import com.meilitech.zhongyi.resource.util.FileUtil;
 import com.meilitech.zhongyi.resource.util.RedissonUtil;
-import com.meilitech.zhongyi.resource.util.ToolsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
-import org.springframework.dao.DataAccessException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class FtpParseTasks {
@@ -48,7 +38,7 @@ public class FtpParseTasks {
     @Scheduled(fixedDelay = 5000)
     public void parse() {
         redissonUtil = new RedissonUtil(RedissonUtil.BF_RESOURCE, true);
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>(5000);
 
         File dir = new File(env.getProperty("resource.data.path")+"xdth/");
         File[] filesList = dir.listFiles();
@@ -57,7 +47,9 @@ public class FtpParseTasks {
             return;
         }
         for (File file : filesList) {
-            if (!file.isFile()) continue;
+            if (!file.isFile()) {
+                continue;
+            }
             do {
                 if (!file.getName().matches(".*\\.gz")) {
                     log.debug("ignore:" + file.getAbsolutePath());
