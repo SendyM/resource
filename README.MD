@@ -37,3 +37,6 @@
 
     #apache-cassandra-3.0.15/conf/cassandra.yaml
     listen_interface: ens3 #481行左右
+    
+##API接口文档地址
+http://localhost:8080/swagger-ui.html
