@@ -1,19 +1,18 @@
 package com.meilitech.zhongyi.resource.api.response;
 
 
-import com.meilitech.zhongyi.resource.api.entity.BaseModel;
 import com.meilitech.zhongyi.resource.api.enums.ResultType;
 import com.meilitech.zhongyi.resource.util.BeanUtil;
 import com.meilitech.zhongyi.resource.util.StrUtil;
 import lombok.Data;
 
 /**
- * 钉钉API响应报文对象基类
+ * 数据源API响应报文对象基类
  *
  * @author mjm
  */
 @Data
-public class BaseResponse extends BaseModel {
+public class BaseResponse {
 
     /**
      * 错误码

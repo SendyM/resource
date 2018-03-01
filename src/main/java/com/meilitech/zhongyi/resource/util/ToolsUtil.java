@@ -1,6 +1,5 @@
 package com.meilitech.zhongyi.resource.util;
 
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 

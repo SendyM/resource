@@ -4,9 +4,9 @@ package com.meilitech.zhongyi.resource.api.enums;
 import com.meilitech.zhongyi.resource.util.BeanUtil;
 
 /**
- * 微信接口全局返回码枚举
+ * API接口全局返回码枚举
  *
- * @author peiyu
+ * @author Sendy
  * @since 1.2
  */
 public enum ResultType {

@@ -3,7 +3,7 @@ package com.meilitech.zhongyi.resource.util;
 /**
  * 字符串常用方法工具类
  *
- * @author peiyu
+ * @author Sendy
  */
 public final class StrUtil {
 
