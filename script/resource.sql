@@ -22,6 +22,7 @@ CREATE TABLE resource (
   provider varchar,
   status tinyint,
   updateTime timestamp,
+  maxCrawlCount int,
   PRIMARY KEY (rank,resourceTaskId,ymd,crawlerTime,createTime,publishTime,updateTime,resourceId))
   WITH CLUSTERING ORDER BY (resourceTaskId desc,ymd desc,crawlerTime desc,createTime desc,publishTime desc,updateTime desc,resourceId desc)
   AND GC_GRACE_SECONDS = 0;

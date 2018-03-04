@@ -9,7 +9,7 @@ import lombok.Data;
 /**
  * 数据源API响应报文对象基类
  *
- * @author mjm
+ * @author Sendy
  */
 @Data
 public class BaseResponse {

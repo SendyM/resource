@@ -1,7 +1,6 @@
 
 package com.meilitech.zhongyi.resource.dao;
 
-import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,8 +8,8 @@ import org.springframework.data.cassandra.mapping.Column;
 import org.springframework.data.cassandra.mapping.PrimaryKey;
 import org.springframework.data.cassandra.mapping.Table;
 
-
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.UUID;
 
@@ -24,10 +23,9 @@ public class ResourceDao {
         DOMAIN(1), LIST(3);
         private int urlType;
 
-        private UrlType(int type) {
+        UrlType(int type) {
             this.urlType = type;
         }
-
 
         public int getUrlType() {
             return this.urlType;
@@ -35,17 +33,15 @@ public class ResourceDao {
     }
 
     public enum Provider {
-        NEWSPRIDER("inner_spider_news_01"), TASKCENTER("task_center");
+        NEWSPRIDER("inner_spider_news_01"),
+        TASKCENTER("task_center");
         // 定义私有变量
         private String nCode;
 
         // 构造函数，枚举类型只能为私有
-        private Provider(String _nCode) {
-
+        Provider(String _nCode) {
             this.nCode = _nCode;
-
         }
-
         @Override
         public String toString() {
             return this.nCode;
@@ -92,7 +88,10 @@ public class ResourceDao {
     private int status;
     @Column("updateTime")
     private Date updateTime;
+    @Column("maxCrawlCount")
+    private int maxCrawlCount;
 
+    private Long dayUpdateCount;
 
     public String getCharset() {
         return charset;
@@ -110,7 +109,6 @@ public class ResourceDao {
     public void setDescription(String description) {
         this.description = description;
     }
-
 
     public String getKeywords() {
         return keywords;

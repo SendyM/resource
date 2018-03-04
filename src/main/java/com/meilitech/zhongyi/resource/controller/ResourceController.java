@@ -2,49 +2,41 @@ package com.meilitech.zhongyi.resource.controller;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.datastax.driver.core.*;
+import com.datastax.driver.core.PagingState;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.exceptions.ReadFailureException;
-import com.datastax.driver.core.querybuilder.Clause;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
 import com.meilitech.zhongyi.resource.constants.SysError;
 import com.meilitech.zhongyi.resource.dao.ResourceDao;
 import com.meilitech.zhongyi.resource.dao.ResourceRepository;
-import com.meilitech.zhongyi.resource.dao.UrlDao;
+import com.meilitech.zhongyi.resource.dao.ResourceStatisticsDao;
 import com.meilitech.zhongyi.resource.dao.UrlRepository;
 import com.meilitech.zhongyi.resource.service.ResourceService;
-import com.meilitech.zhongyi.resource.util.FileUtil;
-import com.meilitech.zhongyi.resource.util.RedissonUtil;
+import com.meilitech.zhongyi.resource.util.DateUtil;
 import com.meilitech.zhongyi.resource.util.ResponseTemplate;
-import com.meilitech.zhongyi.resource.util.ToolsUtil;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.core.env.Environment;
-import org.springframework.dao.DataAccessException;
 import org.springframework.data.cassandra.convert.CassandraConverter;
-
 import org.springframework.data.cassandra.core.CassandraOperations;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpEntity;
-import org.springframework.web.bind.annotation.*;
-
-
-import javax.servlet.http.HttpServletRequest;
-import java.io.*;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 @RequestMapping("/resource")
 @RestController
@@ -62,6 +54,7 @@ public class ResourceController {
     ResourceService resourceService;
     @Autowired
     Environment env;
+
     private Object list;
 
 
@@ -122,91 +115,126 @@ public class ResourceController {
         return res;
     }
 
+    /**
+     * 更新域名抓取url数量阈值
+     * @param reqMap Map
+     * @param httpEntity HttpEntity
+     * @return ResponseTemplate
+     */
     @PostMapping
     @RequestMapping("/updateMaxCrawlCount")
-    //更新域名抓取url数量阈值
-    public ResponseTemplate update(@RequestParam Map<String, Object> reqMap, HttpEntity<String> httpEntity) {
+    public ResponseTemplate updateMaxCrawlCount(@RequestParam Map<String, Object> reqMap, HttpEntity<String> httpEntity) {
+        ResponseTemplate res = new ResponseTemplate();
+        JSONObject data = (JSONObject) JSON.parse(reqMap.getOrDefault("data", new JSONObject()).toString());
+        JSONObject body = (JSONObject) data.getOrDefault("body", new JSONObject());
+        JSONObject request = (JSONObject) body.getOrDefault("request", new JSONObject());
+
+        String domain = (String) request.get("maxCrawlCount");
+        int maxCrawlCount = Integer.valueOf((String) request.getOrDefault("maxCrawlCount", "20000"));
+
+        String provider = (String) request.get("provider");
+
+       /* if (domain == null || domain.isEmpty()) {
+            res.setResultCode(SysError.IMPORT_PROVIDER_ERR);
+            return res;
+        }
+        if (provider.equals(ResourceDao.Provider.TASKCENTER.toString())) {
+            res.setResultCode(SysError.IMPORT_PROVIDER_ERR);
+            return res;
+        }*/
+
+        Select select = QueryBuilder.select().all().from("resource");
+        select.where(QueryBuilder.eq("domain", "www.sznews.com"));
+        select.allowFiltering();
+        select.enableTracing();
+
+        ResultSet resultSet;
+        List<String> names = new ArrayList<>();
+        List<String> values = new ArrayList<>();
+        try {
+            resultSet = cassandraTemplate.getSession().execute(select);
+            for (Row row : resultSet) {
+
+            }
+
+        } catch (ReadFailureException e) {
+            res.setResultCode("db_err");
+            e.printStackTrace();
+            return res;
+        }
+        //todo  MaxCrawlCount
+        values.add("20180227051312056");
+        values.add("20180227051312056");
+        values.add(new Date()+"");
+        values.add(new Date()+"");
+        values.add(new Date()+"");
+        values.add(new Date()+"");
+        values.add(new Date()+"");
+        values.add("20180227051312056");
+        names.add("rank");
+        names.add("resourceTaskId");
+        names.add("ymd");
+        names.add("crawlerTime");
+        names.add("createTime");
+        names.add("publishTime");
+        names.add("updateTime");
+        names.add("resourceId");
+
+
+        Update.Where update = QueryBuilder.update("resource")
+                .with(QueryBuilder.set("maxCrawlCount", maxCrawlCount))
+                .where(QueryBuilder.eq(names,values));
+        cassandraTemplate.getSession().execute(update);
+        return res;
+    }
+    /**
+     * 获取rank值
+     * @param reqMap Map
+     * @return ResponseTemplate
+     */
+    @PostMapping
+    @RequestMapping("/getRank")
+    public ResponseTemplate getRank(@RequestParam Map<String, Object> reqMap) {
         ResponseTemplate res = new ResponseTemplate();
         JSONObject data = (JSONObject) JSON.parse(reqMap.getOrDefault("data", new JSONObject()).toString());
         JSONObject body = (JSONObject) data.getOrDefault("body", new JSONObject());
         JSONObject request = (JSONObject) body.getOrDefault("request", new JSONObject());
 
         String domain = (String) request.get("domain");
-        int maxCrawlCount = Integer.valueOf((String) request.getOrDefault("maxCrawlCount", "20000"));
 
-        String provider = (String) request.get("provider");
-        if (provider == null || provider.isEmpty()) {
-            res.setResultCode(SysError.IMPORT_PROVIDER_ERR);
-            return res;
-        }
-        if (provider.equals(ResourceDao.Provider.TASKCENTER)) {
-            res.setResultCode(SysError.IMPORT_PROVIDER_ERR);
-            return res;
-        }
+        Date startTime = DateUtil.getDate(8);
+        Date endTime = DateUtil.getDate(1);
 
-
-        Select select = QueryBuilder.select().all().from("resource");
+        Select select = QueryBuilder.select().all().from("resource_statistics");
         select.where(QueryBuilder.eq("domain", domain));
+        select.where(QueryBuilder.gte("ymd",startTime));
+        select.where(QueryBuilder.lte("ymd",endTime));
+
         select.allowFiltering();
         select.enableTracing();
-
-        ResultSet resultSet = null;
-        CassandraConverter converter = cassandraTemplate.getConverter();
+        ResultSet resultSet;
         try {
             resultSet = cassandraTemplate.getSession().execute(select);
         } catch (ReadFailureException e) {
-            e.printStackTrace();
             res.setResultCode("db_err");
+            e.printStackTrace();
             return res;
         }
-        List<ResourceDao> rList = new ArrayList<>();
-        if (resultSet != null) {
-            int remaining = resultSet.getAvailableWithoutFetching();
-            for (Row row : resultSet) {
-                //Convert rows to chat objects
-                ResourceDao chat = converter.read(ResourceDao.class, row);
-
-                rList.add(chat);
-
-                //If we can't move to the next row without fetching we break
-                if (--remaining == 0) {
-                    break;
-                }
-            }
+        Long crawlCount = 0L;
+        for (Row row : resultSet) {
+            ResourceStatisticsDao resourceStatistics = row.get("resourceStatistics", ResourceStatisticsDao.class);
+            crawlCount += resourceStatistics.getDayUpdateCount();
         }
-
-
-        Update.Where update = QueryBuilder.update("resource")
-                .with(QueryBuilder.set("domain", domain))
-                .where(QueryBuilder.eq("domain", domain));
-
-
-        cassandraTemplate.getSession().execute(update);
-
+        res.setResultCode(crawlCount.toString());
         return res;
     }
 
-//    @RequestMapping("/info/search")
-//    public ResponseTemplate search(@RequestParam Map<String, Object> reqMap) {
-//        List<ResourceDao> rdList = resourceRepository.findAll();
-//
-//
-//
-//        ResponseTemplate res = new ResponseTemplate();
-//        res.setResponse("data", rdList);
-//
-//        return res;
-//    }
-
     @RequestMapping("/info/search")
     public ResponseTemplate search(@RequestParam Map<String, Object> reqMap, HttpEntity<String> httpEntity) {
-
-
         ResponseTemplate res = new ResponseTemplate();
         log.info(httpEntity.getBody());
         log.info(reqMap.getOrDefault("data", new JSONObject()).toString());
         JSONObject data = (JSONObject) JSON.parse(reqMap.getOrDefault("data", new JSONObject()).toString());
-
 
         JSONObject body = (JSONObject) data.getOrDefault("body", new JSONObject());
         JSONObject request = (JSONObject) body.getOrDefault("request", new JSONObject());
@@ -233,8 +261,6 @@ public class ResourceController {
                 res.setResultCode("lastUpdateTimeErr");
                 return res;
             }
-
-
             //如有分页
             if (page != null && !page.isEmpty()) {
                 PagingState pagingState = PagingState.fromString(page);
@@ -260,8 +286,10 @@ public class ResourceController {
                 rankMin = Integer.valueOf((String) request.getOrDefault("rankMin", "0"));
                 rankMax = Integer.valueOf((String) request.getOrDefault("rankMax", "0"));
 
-                ArrayList rankList = new ArrayList();
-                for (int i = rankMin; i <= rankMax; i++) rankList.add(i);
+                ArrayList<Integer> rankList = new ArrayList<>();
+                for (int i = rankMin; i <= rankMax; i++) {
+                    rankList.add(i);
+                }
                 select.where(QueryBuilder.in("rank", rankList));
             }
 
@@ -280,7 +308,6 @@ public class ResourceController {
                 }
             }
 
-
             String publishTimeStartParams = (String) request.getOrDefault("publishTimeStart", "");
             String publishTimeEndParams = (String) request.getOrDefault("publishTimeEnd", "");
 
@@ -294,8 +321,6 @@ public class ResourceController {
                     return res;
                 }
             }
-
-
             String lastUpdateTimeStartParams = (String) request.getOrDefault("updateTimeStart", "");
             String lastUpdateTimeEndParams = (String) request.getOrDefault("updateTimeEnd", "");
 
@@ -364,14 +389,21 @@ public class ResourceController {
             int remaining = resultSet.getAvailableWithoutFetching();
 
             List<ResourceDao> rList = new ArrayList<>(pageNum);
-            ArrayList domainList = new ArrayList<>();
+            ArrayList<String> domainList = new ArrayList<>();
             for (Row row : resultSet) {
                 //Convert rows to chat objects
                 ResourceDao chat = converter.read(ResourceDao.class, row);
-
-                domainList.add(chat.getDomain().toString());
+                domainList.add(chat.getDomain());
+                //日更量
+                Select select_url_statistics = QueryBuilder.select().all().from("url_statistics");
+                select_url_statistics.where(QueryBuilder.eq("domain", chat.getDomain()));
+                ResultSet resultSet2;
+                resultSet2 = cassandraTemplate.getSession().execute(select_url_statistics);
+                for (Row  row2: resultSet2) {
+                    ResourceStatisticsDao resourceStatistics = row2.get("resourceStatistics", ResourceStatisticsDao.class);
+                    chat.setDayUpdateCount(resourceStatistics.getDayUpdateCount());
+                }
                 rList.add(chat);
-
 
                 //If we can't move to the next row without fetching we break
                 if (--remaining == 0) {
@@ -383,19 +415,10 @@ public class ResourceController {
             String serializedNewPagingState = newPagingState != null ?
                     newPagingState.toString() :
                     null;
-
-
             res.setResponse("data", rList);
             if (serializedNewPagingState != null) {
                 res.setResponse("resultSign", serializedNewPagingState);
             }
-
-            //dayUpdateCount start
-
-            Select select_url_statistics = QueryBuilder.select().all().from("url_statistics");
-            ResultSet resultSet2 = null;
-            resultSet2 = cassandraTemplate.getSession().execute(select_url_statistics);
-
 //            domainList.add(i);
             //select_url_statistics.where(QueryBuilder.eq("domain", "www.dahe.cn"));
             //dayUpdateCount end
@@ -405,8 +428,6 @@ public class ResourceController {
 
         //Return an object with a list of chat messages and the next paging state
         //return new ChatPage(chats, serializedNewPagingState);
-
-
         res.setResponse("pageNum", pageNum);
 
         return res;
