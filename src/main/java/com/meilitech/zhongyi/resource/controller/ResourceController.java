@@ -7,6 +7,7 @@ import com.datastax.driver.core.exceptions.ReadFailureException;
 import com.datastax.driver.core.querybuilder.Clause;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import com.datastax.driver.core.querybuilder.Update;
 import com.meilitech.zhongyi.resource.constants.SysError;
 import com.meilitech.zhongyi.resource.dao.ResourceDao;
 import com.meilitech.zhongyi.resource.dao.ResourceRepository;
@@ -61,6 +62,7 @@ public class ResourceController {
     ResourceService resourceService;
     @Autowired
     Environment env;
+    private Object list;
 
 
     @PostMapping
@@ -120,6 +122,69 @@ public class ResourceController {
         return res;
     }
 
+    @PostMapping
+    @RequestMapping("/updateMaxCrawlCount")
+    //更新域名抓取url数量阈值
+    public ResponseTemplate update(@RequestParam Map<String, Object> reqMap, HttpEntity<String> httpEntity) {
+        ResponseTemplate res = new ResponseTemplate();
+        JSONObject data = (JSONObject) JSON.parse(reqMap.getOrDefault("data", new JSONObject()).toString());
+        JSONObject body = (JSONObject) data.getOrDefault("body", new JSONObject());
+        JSONObject request = (JSONObject) body.getOrDefault("request", new JSONObject());
+
+        String domain = (String) request.get("domain");
+        int maxCrawlCount = Integer.valueOf((String) request.getOrDefault("maxCrawlCount", "20000"));
+
+        String provider = (String) request.get("provider");
+        if (provider == null || provider.isEmpty()) {
+            res.setResultCode(SysError.IMPORT_PROVIDER_ERR);
+            return res;
+        }
+        if (provider.equals(ResourceDao.Provider.TASKCENTER)) {
+            res.setResultCode(SysError.IMPORT_PROVIDER_ERR);
+            return res;
+        }
+
+
+        Select select = QueryBuilder.select().all().from("resource");
+        select.where(QueryBuilder.eq("domain", domain));
+        select.allowFiltering();
+        select.enableTracing();
+
+        ResultSet resultSet = null;
+        CassandraConverter converter = cassandraTemplate.getConverter();
+        try {
+            resultSet = cassandraTemplate.getSession().execute(select);
+        } catch (ReadFailureException e) {
+            e.printStackTrace();
+            res.setResultCode("db_err");
+            return res;
+        }
+        List<ResourceDao> rList = new ArrayList<>();
+        if (resultSet != null) {
+            int remaining = resultSet.getAvailableWithoutFetching();
+            for (Row row : resultSet) {
+                //Convert rows to chat objects
+                ResourceDao chat = converter.read(ResourceDao.class, row);
+
+                rList.add(chat);
+
+                //If we can't move to the next row without fetching we break
+                if (--remaining == 0) {
+                    break;
+                }
+            }
+        }
+
+
+        Update.Where update = QueryBuilder.update("resource")
+                .with(QueryBuilder.set("domain", domain))
+                .where(QueryBuilder.eq("domain", domain));
+
+
+        cassandraTemplate.getSession().execute(update);
+
+        return res;
+    }
 
 //    @RequestMapping("/info/search")
 //    public ResponseTemplate search(@RequestParam Map<String, Object> reqMap) {
@@ -299,12 +364,14 @@ public class ResourceController {
             int remaining = resultSet.getAvailableWithoutFetching();
 
             List<ResourceDao> rList = new ArrayList<>(pageNum);
-
+            ArrayList domainList = new ArrayList<>();
             for (Row row : resultSet) {
                 //Convert rows to chat objects
                 ResourceDao chat = converter.read(ResourceDao.class, row);
 
+                domainList.add(chat.getDomain().toString());
                 rList.add(chat);
+
 
                 //If we can't move to the next row without fetching we break
                 if (--remaining == 0) {
@@ -322,6 +389,16 @@ public class ResourceController {
             if (serializedNewPagingState != null) {
                 res.setResponse("resultSign", serializedNewPagingState);
             }
+
+            //dayUpdateCount start
+
+            Select select_url_statistics = QueryBuilder.select().all().from("url_statistics");
+            ResultSet resultSet2 = null;
+            resultSet2 = cassandraTemplate.getSession().execute(select_url_statistics);
+
+//            domainList.add(i);
+            //select_url_statistics.where(QueryBuilder.eq("domain", "www.dahe.cn"));
+            //dayUpdateCount end
         } else {
             res.setResponse("data", null);
         }
