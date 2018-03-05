@@ -20,8 +20,8 @@ public class CassandraTest {
 
 		// addContactPoints:cassandra节点ip withPort:cassandra节点端口 默认9042
 		// withCredentials:cassandra用户名密码 如果cassandra.yaml里authenticator：AllowAllAuthenticator 可以不用配置
-		cluster = Cluster.builder().addContactPoints("180.76.248.61").withPort(9042)
-				.withCredentials("zhongyi", "zhongyi").withPoolingOptions(poolingOptions).build();
+		cluster = Cluster.builder().addContactPoints("127.0.0.1").withPort(9042)
+				.withCredentials("cassandra", "cassandra").withPoolingOptions(poolingOptions).build();
 		// 建立连接
 		 session = cluster.connect("zhongyi_db");//连接已存在的键空间
 		//session = cluster.connect();
@@ -38,4 +38,5 @@ public class CassandraTest {
 		ResultSet execute = session.execute(query);
 		System.out.println(execute.all());
 	}
+
 }

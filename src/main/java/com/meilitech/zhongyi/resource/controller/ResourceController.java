@@ -33,10 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RequestMapping("/resource")
 @RestController
@@ -389,20 +386,33 @@ public class ResourceController {
             int remaining = resultSet.getAvailableWithoutFetching();
 
             List<ResourceDao> rList = new ArrayList<>(pageNum);
-            ArrayList<String> domainList = new ArrayList<>();
+            //List<String> domainList = new ArrayList<>();
             for (Row row : resultSet) {
                 //Convert rows to chat objects
                 ResourceDao chat = converter.read(ResourceDao.class, row);
-                domainList.add(chat.getDomain());
+               // domainList.add(chat.getDomain());
                 //日更量
-                Select select_url_statistics = QueryBuilder.select().all().from("url_statistics");
+                /*Select select_url_statistics = QueryBuilder.select().all().from("url_statistics");
                 select_url_statistics.where(QueryBuilder.eq("domain", chat.getDomain()));
+                select_url_statistics.allowFiltering();
+                select_url_statistics.enableTracing();
                 ResultSet resultSet2;
                 resultSet2 = cassandraTemplate.getSession().execute(select_url_statistics);
                 for (Row  row2: resultSet2) {
-                    ResourceStatisticsDao resourceStatistics = row2.get("resourceStatistics", ResourceStatisticsDao.class);
-                    chat.setDayUpdateCount(resourceStatistics.getDayUpdateCount());
+                    String dayUpdateCount = row2.getString( "dayUpdateCount" );
+                    chat.setDayUpdateCount(Long.valueOf( dayUpdateCount ));
+                }*/
+                ResultSet rs = cassandraTemplate.getSession().execute(
+                        QueryBuilder.select("dayUpdateCount")
+                                .from("zhongyi_db", "url_statistics")
+                                .where(QueryBuilder.eq("domain", chat.getDomain())));
+                Iterator<Row> rsIterator = rs.iterator();
+                if (rsIterator.hasNext())
+                {
+                    Row row1 = rsIterator.next();
+                    Long dayUpdateCount = row1.getLong( "dayUpdateCount" );
                 }
+
                 rList.add(chat);
 
                 //If we can't move to the next row without fetching we break
