@@ -88,9 +88,8 @@ public class ResourceDao {
     private int status;
     @Column("updateTime")
     private Date updateTime;
-
-   /* @Column("maxCrawlCount")
-    private int maxCrawlCount;*/
+    @Column("maxCrawlCount")
+    private int maxCrawlCount;
 
     private Long dayUpdateCount;
 

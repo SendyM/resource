@@ -8,11 +8,9 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.exceptions.ReadFailureException;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
-import com.datastax.driver.core.querybuilder.Update;
 import com.meilitech.zhongyi.resource.constants.SysError;
 import com.meilitech.zhongyi.resource.dao.ResourceDao;
 import com.meilitech.zhongyi.resource.dao.ResourceRepository;
-import com.meilitech.zhongyi.resource.dao.ResourceStatisticsDao;
 import com.meilitech.zhongyi.resource.dao.UrlRepository;
 import com.meilitech.zhongyi.resource.service.ResourceService;
 import com.meilitech.zhongyi.resource.util.DateUtil;
@@ -126,6 +124,7 @@ public class ResourceController {
         JSONObject body = (JSONObject) data.getOrDefault("body", new JSONObject());
         JSONObject request = (JSONObject) body.getOrDefault("request", new JSONObject());
 
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         String domain = (String) request.get("maxCrawlCount");
         int maxCrawlCount = Integer.valueOf((String) request.getOrDefault("maxCrawlCount", "20000"));
 
@@ -141,7 +140,7 @@ public class ResourceController {
         }*/
 
         Select select = QueryBuilder.select().all().from("resource");
-        select.where(QueryBuilder.eq("domain", "www.sznews.com"));
+        select.where(QueryBuilder.eq("domain", "www.baidu.com"));
         select.allowFiltering();
         select.enableTracing();
 
@@ -150,8 +149,14 @@ public class ResourceController {
         List<String> values = new ArrayList<>();
         try {
             resultSet = cassandraTemplate.getSession().execute(select);
+            CassandraConverter converter = cassandraTemplate.getConverter();
             for (Row row : resultSet) {
-
+                ResourceDao chat = converter.read(ResourceDao.class, row);
+                System.out.println(chat.getCrawlerTime().getTime());
+                String query= "UPDATE resource SET maxcrawlcount ="+maxCrawlCount+"  WHERE rank="+chat.getRank()+"  and resourceTaskId = '"+chat.getResourceTaskId()+"' and ymd= '"+chat.getYmd()+
+                        "' and crawlerTime = '"+chat.getCrawlerTime().getTime()+"' and createTime = '"+chat.getCreateTime().toEpochMilli()+"' and publishTime = '"+chat.getPublishTime().getTime()+
+                        "' and updateTime= '"+chat.getPublishTime().getTime()+"' and resourceId = "+chat.getResourceId()+";";
+                cassandraTemplate.getSession().execute(query);
             }
 
         } catch (ReadFailureException e) {
@@ -159,29 +164,6 @@ public class ResourceController {
             e.printStackTrace();
             return res;
         }
-        //todo  MaxCrawlCount
-        values.add("20180227051312056");
-        values.add("20180227051312056");
-        values.add(new Date()+"");
-        values.add(new Date()+"");
-        values.add(new Date()+"");
-        values.add(new Date()+"");
-        values.add(new Date()+"");
-        values.add("20180227051312056");
-        names.add("rank");
-        names.add("resourceTaskId");
-        names.add("ymd");
-        names.add("crawlerTime");
-        names.add("createTime");
-        names.add("publishTime");
-        names.add("updateTime");
-        names.add("resourceId");
-
-
-        Update.Where update = QueryBuilder.update("resource")
-                .with(QueryBuilder.set("maxCrawlCount", maxCrawlCount))
-                .where(QueryBuilder.eq(names,values));
-        cassandraTemplate.getSession().execute(update);
         return res;
     }
     /**
@@ -198,17 +180,12 @@ public class ResourceController {
         JSONObject request = (JSONObject) body.getOrDefault("request", new JSONObject());
 
         String domain = (String) request.get("domain");
+        String provider = (String) request.get("provider");
 
-        Date startTime = DateUtil.getDate(8);
-        Date endTime = DateUtil.getDate(1);
+        String startTime = DateUtil.getDate(8);
+        String endTime = DateUtil.getDate(1);
 
-        Select select = QueryBuilder.select().all().from("resource_statistics");
-        select.where(QueryBuilder.eq("domain", domain));
-        select.where(QueryBuilder.gte("ymd",startTime));
-        select.where(QueryBuilder.lte("ymd",endTime));
-
-        select.allowFiltering();
-        select.enableTracing();
+        String select = "SELECT  dayUpdateCount FROM  url_statistics  WHERE provider='HH'and ymd>='"+startTime+"' and ymd<='"+endTime+"' and domain='www.baidu.com'  ALLOW FILTERING ";
         ResultSet resultSet;
         try {
             resultSet = cassandraTemplate.getSession().execute(select);
@@ -217,12 +194,20 @@ public class ResourceController {
             e.printStackTrace();
             return res;
         }
-        Long crawlCount = 0L;
+        Long dayUpdateCount;
+        Long sum = 0L;
         for (Row row : resultSet) {
-            ResourceStatisticsDao resourceStatistics = row.get("resourceStatistics", ResourceStatisticsDao.class);
-            crawlCount += resourceStatistics.getDayUpdateCount();
+            dayUpdateCount = row.getLong("dayUpdateCount");
+            sum = sum+dayUpdateCount;
         }
-        res.setResultCode(crawlCount.toString());
+        Long rank = sum/1000000;
+        if (rank>100){
+            rank=99L;
+        }else  if(rank<1){
+            rank=1L;
+        }
+        res.setResponse("rank",rank);
+
         return res;
     }
 

@@ -3,7 +3,6 @@ package com.meilitech.zhongyi.resource;
 import com.datastax.driver.core.*;
 import org.junit.Test;
 
-import java.text.SimpleDateFormat;
 import java.util.UUID;
 
 public class CassandraTest {
@@ -26,7 +25,7 @@ public class CassandraTest {
 		cluster = Cluster.builder().addContactPoints("127.0.0.1").withPort(9042)
 				.withCredentials("cassandra", "cassandra").withPoolingOptions(poolingOptions).build();
 		// 建立连接
-		 session = cluster.connect("zhongyi_db");//连接已存在的键空间
+		 session = cluster.connect("sendy_db");//连接已存在的键空间
 		//session = cluster.connect();
 
 
@@ -37,9 +36,6 @@ public class CassandraTest {
 
 		ResultSet execute = session.execute(select);*/
 		UUID uuid = UUID.randomUUID();
-
-		SimpleDateFormat format=new SimpleDateFormat("yyyy-MM-dd");
-
 		String query = "INSERT INTO resource ( resourceid,ymd,resourcetaskid,url,urltype,"+
 				                               "domain,title,keywords,description,charset,"+
 								               "crawlerTime,publishTime,categoryIds,country,"+
@@ -48,10 +44,25 @@ public class CassandraTest {
 
 		String query1 = "DELETE FROM resource WHERE rank=99 and ymd=1520240853 and resourceTaskId='1'and crawlerTime=1520240853 and createtime = 1520240853 and publishTime=1520240853 and updatetime = 1520240853 and resourceId=934b19e0-f186-49bb-8ea7-385937520d86;";
 
+		String query2 = "INSERT INTO url_statistics ( provider,ymd,domain,dayUpdateCount)"+
+				         "VALUES('HH','2018-03-05','www.baidu.com',12);";
+		String query3= "UPDATE url_statistics SET dayUpdateCount=dayUpdateCount+2  WHERE provider='HH'and ymd='2018-03-07'and domain='www.baidu.com';";
 
+		String query4= "SELECT  dayUpdateCount FROM  url_statistics  WHERE provider='HH'and ymd<='2018-03-07' and ymd>='2018-03-01' and domain='www.baidu.com'  ALLOW FILTERING ;";
 
-		ResultSet execute = session.execute(query);
-		System.out.println(System.currentTimeMillis());
+		String query5= "UPDATE resource SET maxcrawlcount=99  WHERE rank=99 and resourceTaskId = '1'and ymd= '2018-03-05' " +
+						"and crawlerTime = '1520240853'and createTime = '1520240853' and publishTime = '1520240853'and  updateTime= '1520240853'" +
+						"and resourceId = 99afb796-f7ac-4c6c-b5f8-624e5c236bb3;";
+
+		ResultSet resultSet = session.execute(query5);
+
+		Long dayUpdateCount;
+		Long sum = 0L;
+		for (Row row : resultSet) {
+			dayUpdateCount = row.getLong("dayUpdateCount");
+			sum = sum+dayUpdateCount;
+		}
+		System.out.println(sum);
 
 	}
 }
