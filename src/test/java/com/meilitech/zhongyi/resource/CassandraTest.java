@@ -3,6 +3,9 @@ package com.meilitech.zhongyi.resource;
 import com.datastax.driver.core.*;
 import org.junit.Test;
 
+import java.text.SimpleDateFormat;
+import java.util.UUID;
+
 public class CassandraTest {
 	public Cluster cluster;
 
@@ -33,10 +36,22 @@ public class CassandraTest {
 		select.enableTracing();
 
 		ResultSet execute = session.execute(select);*/
+		UUID uuid = UUID.randomUUID();
 
-		String query = " UPDATE resource SET maxCrawlCount=12  where domain='www.sznews.com' and rank=1 and resourcetaskid='' and ymd='2018-02-28 00:00:00' and crawlertime='2018-02-28 00:00:00'and createtime=2018-02-28 00:00:00 and publishtime=2018-02-28 00:00:00  and updatetime=2018-02-28 00:00:00  and resourceid=''; ";
+		SimpleDateFormat format=new SimpleDateFormat("yyyy-MM-dd");
+
+		String query = "INSERT INTO resource ( resourceid,ymd,resourcetaskid,url,urltype,"+
+				                               "domain,title,keywords,description,charset,"+
+								               "crawlerTime,publishTime,categoryIds,country,"+
+											   "createtime,rank,language,provider,status,updatetime,maxcrawlcount)"+
+				       "VALUES("+uuid+",'2018-03-05','1','www.baidu.com',1,'www.baidu.com','test','baidu','biadu','UTF-8',1520240853,1520240853,'2','china',1520240853,99,'chinese','HH',0,1520240853,12);";
+
+		String query1 = "DELETE FROM resource WHERE rank=99 and ymd=1520240853 and resourceTaskId='1'and crawlerTime=1520240853 and createtime = 1520240853 and publishTime=1520240853 and updatetime = 1520240853 and resourceId=934b19e0-f186-49bb-8ea7-385937520d86;";
+
+
+
 		ResultSet execute = session.execute(query);
-		System.out.println(execute.all());
-	}
+		System.out.println(System.currentTimeMillis());
 
+	}
 }
