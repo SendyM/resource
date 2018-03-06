@@ -28,10 +28,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @RequestMapping("/resource")
 @RestController
@@ -56,7 +57,6 @@ public class ResourceController {
     @PostMapping
     @RequestMapping("/create")
     public ResponseTemplate create(@RequestParam Map<String, Object> reqMap, HttpEntity<String> httpEntity) {
-
 
         int err = 0;
         String errMsg = "ok";
@@ -112,7 +112,8 @@ public class ResourceController {
 
     /**
      * 更新域名抓取url数量阈值
-     * @param reqMap Map
+     *
+     * @param reqMap     Map
      * @param httpEntity HttpEntity
      * @return ResponseTemplate
      */
@@ -124,38 +125,37 @@ public class ResourceController {
         JSONObject body = (JSONObject) data.getOrDefault("body", new JSONObject());
         JSONObject request = (JSONObject) body.getOrDefault("request", new JSONObject());
 
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        String domain = (String) request.get("maxCrawlCount");
-        int maxCrawlCount = Integer.valueOf((String) request.getOrDefault("maxCrawlCount", "20000"));
-
+        String domain = (String) request.get("domain");
         String provider = (String) request.get("provider");
 
-       /* if (domain == null || domain.isEmpty()) {
+        int maxCrawlCount = Integer.valueOf((String) request.getOrDefault("maxCrawlCount", "20000"));
+
+
+        if (domain == null || domain.isEmpty()) {
             res.setResultCode(SysError.IMPORT_PROVIDER_ERR);
             return res;
         }
         if (provider.equals(ResourceDao.Provider.TASKCENTER.toString())) {
             res.setResultCode(SysError.IMPORT_PROVIDER_ERR);
             return res;
-        }*/
+        }
 
         Select select = QueryBuilder.select().all().from("resource");
         select.where(QueryBuilder.eq("domain", "www.baidu.com"));
+        select.where(QueryBuilder.eq("provider", "HH"));
         select.allowFiltering();
         select.enableTracing();
 
         ResultSet resultSet;
-        List<String> names = new ArrayList<>();
-        List<String> values = new ArrayList<>();
         try {
             resultSet = cassandraTemplate.getSession().execute(select);
             CassandraConverter converter = cassandraTemplate.getConverter();
             for (Row row : resultSet) {
                 ResourceDao chat = converter.read(ResourceDao.class, row);
                 System.out.println(chat.getCrawlerTime().getTime());
-                String query= "UPDATE resource SET maxcrawlcount ="+maxCrawlCount+"  WHERE rank="+chat.getRank()+"  and resourceTaskId = '"+chat.getResourceTaskId()+"' and ymd= '"+chat.getYmd()+
-                        "' and crawlerTime = '"+chat.getCrawlerTime().getTime()+"' and createTime = '"+chat.getCreateTime().toEpochMilli()+"' and publishTime = '"+chat.getPublishTime().getTime()+
-                        "' and updateTime= '"+chat.getPublishTime().getTime()+"' and resourceId = "+chat.getResourceId()+";";
+                String query = "UPDATE resource SET maxcrawlcount =" + maxCrawlCount + "  WHERE rank=" + chat.getRank() + "  and resourceTaskId = '" + chat.getResourceTaskId() + "' and ymd= '" + chat.getYmd() +
+                        "' and crawlerTime = '" + chat.getCrawlerTime().getTime() + "' and createTime = '" + chat.getCreateTime().toEpochMilli() + "' and publishTime = '" + chat.getPublishTime().getTime() +
+                        "' and updateTime= '" + chat.getPublishTime().getTime() + "' and resourceId = " + chat.getResourceId() + ";";
                 cassandraTemplate.getSession().execute(query);
             }
 
@@ -166,8 +166,10 @@ public class ResourceController {
         }
         return res;
     }
+
     /**
      * 获取rank值
+     *
      * @param reqMap Map
      * @return ResponseTemplate
      */
@@ -182,10 +184,19 @@ public class ResourceController {
         String domain = (String) request.get("domain");
         String provider = (String) request.get("provider");
 
+        if (domain == null || domain.isEmpty()) {
+            res.setResultCode(SysError.IMPORT_PROVIDER_ERR);
+            return res;
+        }
+        if (provider.equals(ResourceDao.Provider.TASKCENTER.toString())) {
+            res.setResultCode(SysError.IMPORT_PROVIDER_ERR);
+            return res;
+        }
+
         String startTime = DateUtil.getDate(8);
         String endTime = DateUtil.getDate(1);
 
-        String select = "SELECT  dayUpdateCount FROM  url_statistics  WHERE provider='HH'and ymd>='"+startTime+"' and ymd<='"+endTime+"' and domain='www.baidu.com'  ALLOW FILTERING ";
+        String select = "SELECT  dayUpdateCount FROM  url_statistics  WHERE provider='HH'and ymd>='" + startTime + "' and ymd<='" + endTime + "' and domain='www.baidu.com'  ALLOW FILTERING ";
         ResultSet resultSet;
         try {
             resultSet = cassandraTemplate.getSession().execute(select);
@@ -198,15 +209,16 @@ public class ResourceController {
         Long sum = 0L;
         for (Row row : resultSet) {
             dayUpdateCount = row.getLong("dayUpdateCount");
-            sum = sum+dayUpdateCount;
+            sum = sum + dayUpdateCount;
         }
-        Long rank = sum/1000000;
-        if (rank>100){
-            rank=99L;
-        }else  if(rank<1){
-            rank=1L;
+        Long rank = sum / 1000000;
+        if (rank > 100) {
+            rank = 99L;
+        } else if (rank < 0) {
+            rank = 0L;
         }
-        res.setResponse("rank",rank);
+        //todo
+        res.setResponse("rank", rank);
 
         return res;
     }
@@ -224,15 +236,16 @@ public class ResourceController {
 
         String page = (String) request.getOrDefault("resultSign", "");
         String resourceTaskId = (String) request.getOrDefault("resourceTaskId", "");
-        String domain = (String) request.getOrDefault("domain", "");
+        String domain = (String) request.getOrDefault("domain", "www.baidu.com");
         String isLike = (String) request.getOrDefault("isLike", "0");
+
+
         int pageNum = Integer.valueOf((String) request.getOrDefault("pageNum", "20"));
 
         Select select = QueryBuilder.select().all().from("resource");
 
-        do {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-            Timestamp minDate = null;
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+           /* Timestamp minDate = null;
             Timestamp maxDate = null;
             try {
                 minDate = new java.sql.Timestamp(new Date(0).getTime());
@@ -242,104 +255,101 @@ public class ResourceController {
                 e.printStackTrace();
                 res.setResultCode("lastUpdateTimeErr");
                 return res;
+            }*/
+        //如有分页
+        if (page != null && !page.isEmpty()) {
+            PagingState pagingState = PagingState.fromString(page);
+            select.setPagingState(pagingState);
+        }
+
+        if (!resourceTaskId.isEmpty()) {
+            select.where(QueryBuilder.eq("resourceTaskId", resourceTaskId));
+        }
+
+        if (!domain.isEmpty()) {
+            if (isLike.equals("1")) {
+                select.where(QueryBuilder.like("domain", domain + "%"));
+            } else {
+                select.where(QueryBuilder.eq("domain", domain));
             }
-            //如有分页
-            if (page != null && !page.isEmpty()) {
-                PagingState pagingState = PagingState.fromString(page);
-                select.setPagingState(pagingState);
-                break;
+        } else {
+            int rankMin;
+            int rankMax;
+
+            rankMin = Integer.valueOf((String) request.getOrDefault("rankMin", "0"));
+            rankMax = Integer.valueOf((String) request.getOrDefault("rankMax", "99"));
+
+            ArrayList<Integer> rankList = new ArrayList<>();
+            for (int i = rankMin; i <= rankMax; i++) {
+                rankList.add(i);
             }
+            select.where(QueryBuilder.in("rank", rankList));
+        }
 
-            if (!resourceTaskId.isEmpty()) {
-                select.where(QueryBuilder.eq("resourceTaskId", resourceTaskId));
-                break;
+
+        String crawlerTimeStartParams = (String) request.getOrDefault("crawlerTimeStart", "");
+        String crawlerTimeEndParams = (String) request.getOrDefault("crawlerTimeEnd", "");
+
+        if (!crawlerTimeStartParams.isEmpty() && !crawlerTimeEndParams.isEmpty()) {
+            try {
+                select.where(QueryBuilder.gte("crawlerTime", dateFormat.parse(crawlerTimeStartParams).getTime()));
+                select.where(QueryBuilder.lte("crawlerTime", dateFormat.parse(crawlerTimeEndParams).getTime()));
+            } catch (ParseException e) {
+                e.printStackTrace();
+                res.setResultCode("crawlerTimeErr");
+                return res;
             }
+        }
 
-            if (!domain.isEmpty()) {
-                if(isLike.equals("1")) {
-                    select.where(QueryBuilder.like("domain", domain + "%"));
-                }else{
-                    select.where(QueryBuilder.eq("domain", domain));
-                }
-            }else{
-                int rankMin = 0;
-                int rankMax = 0;
+        String publishTimeStartParams = (String) request.getOrDefault("publishTimeStart", "");
+        String publishTimeEndParams = (String) request.getOrDefault("publishTimeEnd", "");
 
-                rankMin = Integer.valueOf((String) request.getOrDefault("rankMin", "0"));
-                rankMax = Integer.valueOf((String) request.getOrDefault("rankMax", "0"));
-
-                ArrayList<Integer> rankList = new ArrayList<>();
-                for (int i = rankMin; i <= rankMax; i++) {
-                    rankList.add(i);
-                }
-                select.where(QueryBuilder.in("rank", rankList));
+        if (!publishTimeStartParams.isEmpty() && !publishTimeEndParams.isEmpty()) {
+            try {
+                select.where(QueryBuilder.gte("publishTime", dateFormat.parse(publishTimeStartParams).getTime()));
+                select.where(QueryBuilder.lte("publishTime", dateFormat.parse(publishTimeEndParams).getTime()));
+            } catch (ParseException e) {
+                e.printStackTrace();
+                res.setResultCode("publishTimeErr");
+                return res;
             }
+        }
+        String lastUpdateTimeStartParams = (String) request.getOrDefault("updateTimeStart", "");
+        String lastUpdateTimeEndParams = (String) request.getOrDefault("updateTimeEnd", "");
 
+        if (!lastUpdateTimeStartParams.isEmpty() && !lastUpdateTimeEndParams.isEmpty()) {
+            long lastUpdateTimeStart;
+            long lastUpdateTimeEnd;
+            try {
+                lastUpdateTimeStart = dateFormat.parse(lastUpdateTimeStartParams).getTime();
+                lastUpdateTimeEnd = dateFormat.parse(lastUpdateTimeEndParams).getTime();
 
-            String crawlerTimeStartParams = (String) request.getOrDefault("crawlerTimeStart", "");
-            String crawlerTimeEndParams = (String) request.getOrDefault("crawlerTimeEnd", "");
-
-            if(!crawlerTimeStartParams.isEmpty() && !crawlerTimeEndParams.isEmpty()) {
-                try {
-                    select.where(QueryBuilder.gte("crawlerTime", dateFormat.parse(crawlerTimeStartParams).getTime()));
-                    select.where(QueryBuilder.lte("crawlerTime", dateFormat.parse(crawlerTimeEndParams).getTime()));
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                    res.setResultCode("crawlerTimeErr");
-                    return res;
-                }
+                select.where(QueryBuilder.gte("updatetime", lastUpdateTimeStart));
+                select.where(QueryBuilder.lte("updatetime", lastUpdateTimeEnd));
+            } catch (ParseException e) {
+                e.printStackTrace();
+                res.setResultCode("updateTimeErr");
+                return res;
             }
+        }
 
-            String publishTimeStartParams = (String) request.getOrDefault("publishTimeStart", "");
-            String publishTimeEndParams = (String) request.getOrDefault("publishTimeEnd", "");
+        String createTimeStartParams = (String) request.getOrDefault("createTimeStart", "");
+        String createTimeEndParams = (String) request.getOrDefault("createTimeEnd", "");
+        if (!createTimeStartParams.isEmpty() && !createTimeEndParams.isEmpty()) {
+            long createTimeStart;
+            long createTimeEnd;
+            try {
+                createTimeStart = dateFormat.parse(createTimeStartParams).getTime();
+                createTimeEnd = dateFormat.parse(createTimeEndParams).getTime();
 
-            if(!publishTimeStartParams.isEmpty() && !publishTimeEndParams.isEmpty()) {
-                try {
-                    select.where(QueryBuilder.gte("publishTime", dateFormat.parse(publishTimeStartParams).getTime()));
-                    select.where(QueryBuilder.lte("publishTime", dateFormat.parse(publishTimeEndParams).getTime()));
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                    res.setResultCode("publishTimeErr");
-                    return res;
-                }
+                select.where(QueryBuilder.gte("createtime", createTimeStart));
+                select.where(QueryBuilder.lte("createtime", createTimeEnd));
+            } catch (ParseException e) {
+                e.printStackTrace();
+                res.setResultCode("createtimeTimeErr");
+                return res;
             }
-            String lastUpdateTimeStartParams = (String) request.getOrDefault("updateTimeStart", "");
-            String lastUpdateTimeEndParams = (String) request.getOrDefault("updateTimeEnd", "");
-
-            if(!lastUpdateTimeStartParams.isEmpty() && !lastUpdateTimeEndParams.isEmpty()) {
-                long lastUpdateTimeStart;
-                long lastUpdateTimeEnd;
-                try {
-                    lastUpdateTimeStart =  dateFormat.parse(lastUpdateTimeStartParams).getTime();
-                    lastUpdateTimeEnd = dateFormat.parse(lastUpdateTimeEndParams).getTime();
-
-                    select.where(QueryBuilder.gte("updatetime", lastUpdateTimeStart));
-                    select.where(QueryBuilder.lte("updatetime", lastUpdateTimeEnd));
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                    res.setResultCode("updateTimeErr");
-                    return res;
-                }
-            }
-
-            String createTimeStartParams = (String) request.getOrDefault("createTimeStart", "");
-            String createTimeEndParams = (String) request.getOrDefault("createTimeEnd", "");
-            if(!createTimeStartParams.isEmpty() && !createTimeEndParams.isEmpty()) {
-                long createTimeStart;
-                long createTimeEnd;
-                try {
-                    createTimeStart = dateFormat.parse(createTimeStartParams).getTime();
-                    createTimeEnd = dateFormat.parse(createTimeEndParams).getTime();
-
-                    select.where(QueryBuilder.gte("createtime", createTimeStart));
-                    select.where(QueryBuilder.lte("createtime", createTimeEnd));
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                    res.setResultCode("createtimeTimeErr");
-                    return res;
-                }
-            }
-        } while (false);
+        }
 
         select.setFetchSize(pageNum);
         select.allowFiltering();
@@ -353,7 +363,7 @@ public class ResourceController {
         CassandraConverter converter = cassandraTemplate.getConverter();
 
         //Execute the query
-        ResultSet resultSet = null;
+        ResultSet resultSet;
         try {
             resultSet = cassandraTemplate.getSession().execute(select);
         } catch (ReadFailureException e) {
@@ -375,29 +385,16 @@ public class ResourceController {
             for (Row row : resultSet) {
                 //Convert rows to chat objects
                 ResourceDao chat = converter.read(ResourceDao.class, row);
-               // domainList.add(chat.getDomain());
+                // domainList.add(chat.getDomain());
                 //日更量
-                /*Select select_url_statistics = QueryBuilder.select().all().from("url_statistics");
-                select_url_statistics.where(QueryBuilder.eq("domain", chat.getDomain()));
-                select_url_statistics.allowFiltering();
-                select_url_statistics.enableTracing();
-                ResultSet resultSet2;
-                resultSet2 = cassandraTemplate.getSession().execute(select_url_statistics);
-                for (Row  row2: resultSet2) {
-                    String dayUpdateCount = row2.getString( "dayUpdateCount" );
-                    chat.setDayUpdateCount(Long.valueOf( dayUpdateCount ));
-                }*/
-                ResultSet rs = cassandraTemplate.getSession().execute(
-                        QueryBuilder.select("dayUpdateCount")
-                                .from("zhongyi_db", "url_statistics")
-                                .where(QueryBuilder.eq("domain", chat.getDomain())));
-                Iterator<Row> rsIterator = rs.iterator();
-                if (rsIterator.hasNext())
-                {
-                    Row row1 = rsIterator.next();
-                    Long dayUpdateCount = row1.getLong( "dayUpdateCount" );
-                }
 
+                String query = "select dayUpdateCount from url_statistics where domain='"+domain+"'  and  ymd='"+chat.getYmd() +"'and  provider = '"+chat.getProvider()+"'";
+                ResultSet rs = cassandraTemplate.getSession().execute(query);
+                Long dayUpdateCount = 0L;
+                for (Row rw : rs) {
+                    dayUpdateCount = rw.getLong("dayUpdateCount");
+                }
+                chat.setDayUpdateCount(dayUpdateCount);
                 rList.add(chat);
 
                 //If we can't move to the next row without fetching we break
@@ -407,16 +404,11 @@ public class ResourceController {
             }
 
             //Serialise the next paging state
-            String serializedNewPagingState = newPagingState != null ?
-                    newPagingState.toString() :
-                    null;
+            String serializedNewPagingState = newPagingState != null ? newPagingState.toString() : null;
             res.setResponse("data", rList);
             if (serializedNewPagingState != null) {
                 res.setResponse("resultSign", serializedNewPagingState);
             }
-//            domainList.add(i);
-            //select_url_statistics.where(QueryBuilder.eq("domain", "www.dahe.cn"));
-            //dayUpdateCount end
         } else {
             res.setResponse("data", null);
         }

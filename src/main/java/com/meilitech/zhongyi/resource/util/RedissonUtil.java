@@ -32,7 +32,7 @@ public class RedissonUtil {
         // connects to 127.0.0.1:6379 by default
         if (redissonClient == null) {
             Config config = new Config();
-            config.useSingleServer().setAddress("redis://127.0.0.1:6379");
+            config.useSingleServer().setAddress("redis://180.76.248.61:6379");
             redissonClient = Redisson.create(config);
         }
 

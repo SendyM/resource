@@ -54,12 +54,14 @@ public class CassandraTest {
 						"and crawlerTime = '1520240853'and createTime = '1520240853' and publishTime = '1520240853'and  updateTime= '1520240853'" +
 						"and resourceId = 99afb796-f7ac-4c6c-b5f8-624e5c236bb3;";
 
-		ResultSet resultSet = session.execute(query5);
+		String query6= "SELECT  *  FROM  resource  WHERE  domain='www.baidu.com'  ALLOW FILTERING ;";
 
-		Long dayUpdateCount;
-		Long sum = 0L;
+		ResultSet resultSet = session.execute(query6);
+
+		int dayUpdateCount;
+		int sum = 0;
 		for (Row row : resultSet) {
-			dayUpdateCount = row.getLong("dayUpdateCount");
+			dayUpdateCount = row.getInt("maxCrawlCount");
 			sum = sum+dayUpdateCount;
 		}
 		System.out.println(sum);
