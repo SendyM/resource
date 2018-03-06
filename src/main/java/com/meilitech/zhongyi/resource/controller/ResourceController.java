@@ -236,7 +236,7 @@ public class ResourceController {
 
         String page = (String) request.getOrDefault("resultSign", "");
         String resourceTaskId = (String) request.getOrDefault("resourceTaskId", "");
-        String domain = (String) request.getOrDefault("domain", "www.baidu.com");
+        String domain = (String) request.getOrDefault("domain", "");
         String isLike = (String) request.getOrDefault("isLike", "0");
 
 
@@ -388,7 +388,7 @@ public class ResourceController {
                 // domainList.add(chat.getDomain());
                 //日更量
 
-                String query = "select dayUpdateCount from url_statistics where domain='"+domain+"'  and  ymd='"+chat.getYmd() +"'and  provider = '"+chat.getProvider()+"'";
+                String query = "select dayUpdateCount from url_statistics where domain='"+chat.getDomain()+"'  and  ymd='"+chat.getYmd() +"'and  provider = '"+chat.getProvider()+"'";
                 ResultSet rs = cassandraTemplate.getSession().execute(query);
                 Long dayUpdateCount = 0L;
                 for (Row rw : rs) {
