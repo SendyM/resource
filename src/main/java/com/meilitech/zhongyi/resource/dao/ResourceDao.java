@@ -89,9 +89,17 @@ public class ResourceDao {
     @Column("updateTime")
     private Date updateTime;
     @Column("maxCrawlCount")
-    private int maxCrawlCount;
+    private String maxCrawlCount;
 
     private Long dayUpdateCount;
+
+    public String  getMaxCrawlCount(){
+        if(this.maxCrawlCount==null){
+            return "";
+        }
+        return maxCrawlCount;
+    }
+
 
     public String getCharset() {
         return charset;
