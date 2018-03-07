@@ -22,10 +22,10 @@ public class CassandraTest {
 
 		// addContactPoints:cassandra节点ip withPort:cassandra节点端口 默认9042
 		// withCredentials:cassandra用户名密码 如果cassandra.yaml里authenticator：AllowAllAuthenticator 可以不用配置
-		cluster = Cluster.builder().addContactPoints("127.0.0.1").withPort(9042)
-				.withCredentials("cassandra", "cassandra").withPoolingOptions(poolingOptions).build();
+		cluster = Cluster.builder().addContactPoints("180.76.248.61").withPort(9042)
+				.withCredentials("zhongyi", "zhongyi").withPoolingOptions(poolingOptions).build();
 		// 建立连接
-		 session = cluster.connect("sendy_db");//连接已存在的键空间
+		 session = cluster.connect("zhongyi_db");//连接已存在的键空间
 		//session = cluster.connect();
 
 
@@ -54,7 +54,7 @@ public class CassandraTest {
 						"and crawlerTime = '1520240853'and createTime = '1520240853' and publishTime = '1520240853'and  updateTime= '1520240853'" +
 						"and resourceId = 99afb796-f7ac-4c6c-b5f8-624e5c236bb3;";
 
-		String query6= "SELECT  *  FROM  resource  WHERE  domain='www.baidu.com'  ALLOW FILTERING ;";
+		String query6= "SELECT * FROM resource WHERE domain='www.sznews.com' AND provider='task_center' ALLOW FILTERING;";
 
 		ResultSet resultSet = session.execute(query6);
 

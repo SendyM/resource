@@ -52,9 +52,6 @@ public class ResourceController {
     @Autowired
     Environment env;
 
-    private Object list;
-
-
     @PostMapping
     @RequestMapping("/create")
     public ResponseTemplate create(@RequestParam Map<String, Object> reqMap, HttpEntity<String> httpEntity) {
@@ -106,8 +103,6 @@ public class ResourceController {
             String dataPath = env.getProperty("resource.data.path") + contentParams.get("path");
             res = resourceService.importFromFile(dataPath, provider);
         }
-
-
         return res;
     }
 
@@ -133,11 +128,17 @@ public class ResourceController {
 
 
         if (domain == null || domain.isEmpty()) {
-            res.setResultCode(SysError.IMPORT_PROVIDER_ERR);
+            res.setResultCode("10001");
+            res.setResultMsg("domain不能为空！");
             return res;
         }
-        if (provider.equals(ResourceDao.Provider.TASKCENTER.toString())) {
+        /*if (provider.equals(ResourceDao.Provider.TASKCENTER.toString())) {
             res.setResultCode(SysError.IMPORT_PROVIDER_ERR);
+            return res;
+        }*/
+        if (provider == null || provider.isEmpty()) {
+            res.setResultCode("10001");
+            res.setResultMsg("provider不能为空！");
             return res;
         }
 
@@ -153,10 +154,11 @@ public class ResourceController {
             CassandraConverter converter = cassandraTemplate.getConverter();
             for (Row row : resultSet) {
                 ResourceDao chat = converter.read(ResourceDao.class, row);
-                System.out.println(chat.getCrawlerTime().getTime());
-                String query = "UPDATE resource SET maxcrawlcount =" + maxCrawlCount + "  WHERE rank=" + chat.getRank() + "  and resourceTaskId = '" + chat.getResourceTaskId() + "' and ymd= '" + chat.getYmd() +
+                String query = "update resource set maxcrawlcount =" + maxCrawlCount + "  where rank=" + chat.getRank() + "  and resourceTaskId = '" + chat.getResourceTaskId() + "' and ymd= '" + chat.getYmd() +
                         "' and crawlerTime = '" + chat.getCrawlerTime().getTime() + "' and createTime = '" + chat.getCreateTime().toEpochMilli() + "' and publishTime = '" + chat.getPublishTime().getTime() +
-                        "' and updateTime= '" + chat.getPublishTime().getTime() + "' and resourceId = " + chat.getResourceId() + ";";
+                        "' and updateTime= '" + chat.getUpdateTime().getTime() + "' and resourceId = " + chat.getResourceId() +
+                        " ;";
+                log.info(query);
                 cassandraTemplate.getSession().execute(query);
             }
 
@@ -169,7 +171,7 @@ public class ResourceController {
     }
 
     /**
-     * 获取rank值
+     * 获取rank值并更新到resource表
      *
      * @param reqMap Map
      * @return ResponseTemplate
@@ -186,18 +188,24 @@ public class ResourceController {
         String provider = (String) request.get("provider");
 
         if (domain == null || domain.isEmpty()) {
-            res.setResultCode(SysError.IMPORT_PROVIDER_ERR);
+            res.setResultCode("10001");
+            res.setResultMsg("domain不能为空！");
             return res;
         }
-        if (provider.equals(ResourceDao.Provider.TASKCENTER.toString())) {
+        /*if (provider.equals(ResourceDao.Provider.TASKCENTER.toString())) {
             res.setResultCode(SysError.IMPORT_PROVIDER_ERR);
+            return res;
+        }*/
+        if (provider == null || provider.isEmpty()) {
+            res.setResultCode("10001");
+            res.setResultMsg("provider不能为空！");
             return res;
         }
 
         String startTime = DateUtil.getDate(8);
         String endTime = DateUtil.getDate(1);
 
-        String select = "SELECT  dayUpdateCount FROM  url_statistics  WHERE provider='HH'and ymd>='" + startTime + "' and ymd<='" + endTime + "' and domain='www.baidu.com'  ALLOW FILTERING ";
+        String select = "select  dayUpdateCount from  url_statistics  where  provider='"+provider+"' and ymd>='" + startTime + "' and ymd<='" + endTime + "' and domain='"+domain+"'  allow filtering ";
         ResultSet resultSet;
         try {
             resultSet = cassandraTemplate.getSession().execute(select);
@@ -233,7 +241,7 @@ public class ResourceController {
 
         JSONObject body = (JSONObject) data.getOrDefault("body", new JSONObject());
         JSONObject request = (JSONObject) body.getOrDefault("request", new JSONObject());
-        JSONObject result = (JSONObject) body.getOrDefault("result", new JSONObject());
+        //JSONObject result = (JSONObject) body.getOrDefault("result", new JSONObject());
 
         String page = (String) request.getOrDefault("resultSign", "");
         String resourceTaskId = (String) request.getOrDefault("resourceTaskId", "");
@@ -395,7 +403,6 @@ public class ResourceController {
                 ResourceDao chat = converter.read(ResourceDao.class, row);
                 // domainList.add(chat.getDomain());
                 //日更量
-
                 String query = "select dayUpdateCount from url_statistics where domain='"+chat.getDomain()+"'  and  ymd='"+chat.getYmd() +"'and  provider = '"+chat.getProvider()+"'";
                 ResultSet rs = cassandraTemplate.getSession().execute(query);
                 Long dayUpdateCount = 0L;

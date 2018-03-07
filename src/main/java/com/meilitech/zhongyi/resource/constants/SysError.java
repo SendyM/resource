@@ -14,12 +14,12 @@ public enum SysError {
     private String msg = "";
     private String name;
 
-    private SysError(String msg) {
+    SysError(String msg) {
         this.msg = msg;
         this.name = this.name();
     }
 
-    private SysError() {
+    SysError() {
         this.name = this.name();
     }
 
