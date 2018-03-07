@@ -39,9 +39,12 @@ public class ResourceDao {
         private String nCode;
 
         // 构造函数，枚举类型只能为私有
-        Provider(String _nCode) {
+         Provider(String _nCode) {
+
             this.nCode = _nCode;
+
         }
+
         @Override
         public String toString() {
             return this.nCode;

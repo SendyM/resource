@@ -34,7 +34,7 @@ public class PassiveHeartTasks {
      *
      * 定时发送服务器运行状态
      */
-    @Scheduled(fixedDelay = 5000)
+    @Scheduled(fixedDelay = 500000)
     public void  heart() {
         //todo
         PassiveHeartRequest passiveHeartRequest = new PassiveHeartRequest();
