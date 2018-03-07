@@ -23,7 +23,7 @@ public class ResourceDao {
         DOMAIN(1), LIST(3);
         private int urlType;
 
-        UrlType(int type) {
+        private UrlType(int type) {
             this.urlType = type;
         }
 
@@ -33,15 +33,17 @@ public class ResourceDao {
     }
 
     public enum Provider {
-        NEWSPRIDER("inner_spider_news_01"),
-        TASKCENTER("task_center");
+        NEWSPRIDER("inner_spider_news_01"), TASKCENTER("task_center");
         // 定义私有变量
         private String nCode;
 
         // 构造函数，枚举类型只能为私有
-        Provider(String _nCode) {
+        private Provider(String _nCode) {
+
             this.nCode = _nCode;
+
         }
+
         @Override
         public String toString() {
             return this.nCode;
@@ -88,8 +90,8 @@ public class ResourceDao {
     private int status;
     @Column("updateTime")
     private Date updateTime;
-    @Column("maxCrawlCount")
-    private int maxCrawlCount;
+//    @Column("maxcrawlcount")
+//    private int maxcrawlcount;
 
     private Long dayUpdateCount;
 

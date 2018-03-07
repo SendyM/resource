@@ -27,10 +27,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -141,8 +142,8 @@ public class ResourceController {
         }
 
         Select select = QueryBuilder.select().all().from("resource");
-        select.where(QueryBuilder.eq("domain", "www.baidu.com"));
-        select.where(QueryBuilder.eq("provider", "HH"));
+        select.where(QueryBuilder.eq("domain", domain));
+        select.where(QueryBuilder.eq("provider", provider));
         select.allowFiltering();
         select.enableTracing();
 
@@ -244,8 +245,9 @@ public class ResourceController {
 
         Select select = QueryBuilder.select().all().from("resource");
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-           /* Timestamp minDate = null;
+        do {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+            Timestamp minDate = null;
             Timestamp maxDate = null;
             try {
                 minDate = new java.sql.Timestamp(new Date(0).getTime());
@@ -255,101 +257,107 @@ public class ResourceController {
                 e.printStackTrace();
                 res.setResultCode("lastUpdateTimeErr");
                 return res;
-            }*/
-        //如有分页
-        if (page != null && !page.isEmpty()) {
-            PagingState pagingState = PagingState.fromString(page);
-            select.setPagingState(pagingState);
-        }
-
-        if (!resourceTaskId.isEmpty()) {
-            select.where(QueryBuilder.eq("resourceTaskId", resourceTaskId));
-        }
-
-        if (!domain.isEmpty()) {
-            if (isLike.equals("1")) {
-                select.where(QueryBuilder.like("domain", domain + "%"));
-            } else {
-                select.where(QueryBuilder.eq("domain", domain));
             }
-        } else {
-            int rankMin;
-            int rankMax;
 
-            rankMin = Integer.valueOf((String) request.getOrDefault("rankMin", "0"));
-            rankMax = Integer.valueOf((String) request.getOrDefault("rankMax", "99"));
 
-            ArrayList<Integer> rankList = new ArrayList<>();
-            for (int i = rankMin; i <= rankMax; i++) {
-                rankList.add(i);
+            //如有分页
+            if (page != null && !page.isEmpty()) {
+                PagingState pagingState = PagingState.fromString(page);
+                select.setPagingState(pagingState);
+                break;
             }
-            select.where(QueryBuilder.in("rank", rankList));
-        }
 
-
-        String crawlerTimeStartParams = (String) request.getOrDefault("crawlerTimeStart", "");
-        String crawlerTimeEndParams = (String) request.getOrDefault("crawlerTimeEnd", "");
-
-        if (!crawlerTimeStartParams.isEmpty() && !crawlerTimeEndParams.isEmpty()) {
-            try {
-                select.where(QueryBuilder.gte("crawlerTime", dateFormat.parse(crawlerTimeStartParams).getTime()));
-                select.where(QueryBuilder.lte("crawlerTime", dateFormat.parse(crawlerTimeEndParams).getTime()));
-            } catch (ParseException e) {
-                e.printStackTrace();
-                res.setResultCode("crawlerTimeErr");
-                return res;
+            if (!resourceTaskId.isEmpty()) {
+                select.where(QueryBuilder.eq("resourceTaskId", resourceTaskId));
+                break;
             }
-        }
 
-        String publishTimeStartParams = (String) request.getOrDefault("publishTimeStart", "");
-        String publishTimeEndParams = (String) request.getOrDefault("publishTimeEnd", "");
+            if (!domain.isEmpty()) {
+                if(isLike.equals("1")) {
+                    select.where(QueryBuilder.like("domain", domain + "%"));
+                }else{
+                    select.where(QueryBuilder.eq("domain", domain));
+                }
+            }else{
+                int rankMin = 0;
+                int rankMax = 0;
 
-        if (!publishTimeStartParams.isEmpty() && !publishTimeEndParams.isEmpty()) {
-            try {
-                select.where(QueryBuilder.gte("publishTime", dateFormat.parse(publishTimeStartParams).getTime()));
-                select.where(QueryBuilder.lte("publishTime", dateFormat.parse(publishTimeEndParams).getTime()));
-            } catch (ParseException e) {
-                e.printStackTrace();
-                res.setResultCode("publishTimeErr");
-                return res;
+                rankMin = Integer.valueOf((String) request.getOrDefault("rankMin", "0"));
+                rankMax = Integer.valueOf((String) request.getOrDefault("rankMax", "99"));
+
+                ArrayList rankList = new ArrayList();
+                for (int i = rankMin; i <= rankMax; i++) rankList.add(i);
+                select.where(QueryBuilder.in("rank", rankList));
             }
-        }
-        String lastUpdateTimeStartParams = (String) request.getOrDefault("updateTimeStart", "");
-        String lastUpdateTimeEndParams = (String) request.getOrDefault("updateTimeEnd", "");
 
-        if (!lastUpdateTimeStartParams.isEmpty() && !lastUpdateTimeEndParams.isEmpty()) {
-            long lastUpdateTimeStart;
-            long lastUpdateTimeEnd;
-            try {
-                lastUpdateTimeStart = dateFormat.parse(lastUpdateTimeStartParams).getTime();
-                lastUpdateTimeEnd = dateFormat.parse(lastUpdateTimeEndParams).getTime();
 
-                select.where(QueryBuilder.gte("updatetime", lastUpdateTimeStart));
-                select.where(QueryBuilder.lte("updatetime", lastUpdateTimeEnd));
-            } catch (ParseException e) {
-                e.printStackTrace();
-                res.setResultCode("updateTimeErr");
-                return res;
+            String crawlerTimeStartParams = (String) request.getOrDefault("crawlerTimeStart", "");
+            String crawlerTimeEndParams = (String) request.getOrDefault("crawlerTimeEnd", "");
+
+            if(!crawlerTimeStartParams.isEmpty() && !crawlerTimeEndParams.isEmpty()) {
+                try {
+                    select.where(QueryBuilder.gte("crawlerTime", dateFormat.parse(crawlerTimeStartParams).getTime()));
+                    select.where(QueryBuilder.lte("crawlerTime", dateFormat.parse(crawlerTimeEndParams).getTime()));
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                    res.setResultCode("crawlerTimeErr");
+                    return res;
+                }
             }
-        }
 
-        String createTimeStartParams = (String) request.getOrDefault("createTimeStart", "");
-        String createTimeEndParams = (String) request.getOrDefault("createTimeEnd", "");
-        if (!createTimeStartParams.isEmpty() && !createTimeEndParams.isEmpty()) {
-            long createTimeStart;
-            long createTimeEnd;
-            try {
-                createTimeStart = dateFormat.parse(createTimeStartParams).getTime();
-                createTimeEnd = dateFormat.parse(createTimeEndParams).getTime();
 
-                select.where(QueryBuilder.gte("createtime", createTimeStart));
-                select.where(QueryBuilder.lte("createtime", createTimeEnd));
-            } catch (ParseException e) {
-                e.printStackTrace();
-                res.setResultCode("createtimeTimeErr");
-                return res;
+            String publishTimeStartParams = (String) request.getOrDefault("publishTimeStart", "");
+            String publishTimeEndParams = (String) request.getOrDefault("publishTimeEnd", "");
+
+            if(!publishTimeStartParams.isEmpty() && !publishTimeEndParams.isEmpty()) {
+                try {
+                    select.where(QueryBuilder.gte("publishTime", dateFormat.parse(publishTimeStartParams).getTime()));
+                    select.where(QueryBuilder.lte("publishTime", dateFormat.parse(publishTimeEndParams).getTime()));
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                    res.setResultCode("publishTimeErr");
+                    return res;
+                }
             }
-        }
+
+
+            String lastUpdateTimeStartParams = (String) request.getOrDefault("updateTimeStart", "");
+            String lastUpdateTimeEndParams = (String) request.getOrDefault("updateTimeEnd", "");
+
+            if(!lastUpdateTimeStartParams.isEmpty() && !lastUpdateTimeEndParams.isEmpty()) {
+                long lastUpdateTimeStart;
+                long lastUpdateTimeEnd;
+                try {
+                    lastUpdateTimeStart =  dateFormat.parse(lastUpdateTimeStartParams).getTime();
+                    lastUpdateTimeEnd = dateFormat.parse(lastUpdateTimeEndParams).getTime();
+
+                    select.where(QueryBuilder.gte("updatetime", lastUpdateTimeStart));
+                    select.where(QueryBuilder.lte("updatetime", lastUpdateTimeEnd));
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                    res.setResultCode("updateTimeErr");
+                    return res;
+                }
+            }
+
+            String createTimeStartParams = (String) request.getOrDefault("createTimeStart", "");
+            String createTimeEndParams = (String) request.getOrDefault("createTimeEnd", "");
+            if(!createTimeStartParams.isEmpty() && !createTimeEndParams.isEmpty()) {
+                long createTimeStart;
+                long createTimeEnd;
+                try {
+                    createTimeStart = dateFormat.parse(createTimeStartParams).getTime();
+                    createTimeEnd = dateFormat.parse(createTimeEndParams).getTime();
+
+                    select.where(QueryBuilder.gte("createtime", createTimeStart));
+                    select.where(QueryBuilder.lte("createtime", createTimeEnd));
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                    res.setResultCode("createtimeTimeErr");
+                    return res;
+                }
+            }
+        } while (false);
 
         select.setFetchSize(pageNum);
         select.allowFiltering();
