@@ -16,6 +16,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestOperations;
 
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
+
 @Component
 public class PassiveHeartTasks {
     private static final Logger log = LoggerFactory.getLogger(PassiveHeartTasks.class);
@@ -29,6 +33,9 @@ public class PassiveHeartTasks {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Value("${resource.heart.providercode}")
+    private String providerCodes;
+
     /**
      * 被动心跳
      *
@@ -39,18 +46,21 @@ public class PassiveHeartTasks {
         //todo
         PassiveHeartRequest passiveHeartRequest = new PassiveHeartRequest();
         PassiveHeart passiveHeart = new PassiveHeart();
-        passiveHeart.setOperationStatus("");
-        passiveHeart.setProviderCode("");
+        passiveHeart.setOperationStatus("1");
+        passiveHeart.setProviderCode(providerCodes);
         passiveHeartRequest.setData(passiveHeart);
         BaseResponse response =new BaseResponse();
 
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType( MediaType.APPLICATION_JSON);
+            List<Charset> list =new ArrayList<>(  );
+            list.add(Charset.forName( "UTF-8" ) );
+            headers.setAcceptCharset( list );
             HttpEntity<Object> formEntity = new HttpEntity<>( passiveHeartRequest, headers );
             log.info("心跳请求数据：{}", objectMapper.writeValueAsString(passiveHeartRequest));
             String msg = restTemplate.postForObject(heartUrl,formEntity, String.class);
-            response.setErrmsg( msg );
+            response.setErrmsg( new String(msg.getBytes("iso-8859-1"),"utf-8") );
             response.setErrcode( ResultType.SUCCESS.getCode().toString() );
             log.info("心跳返回数据：{}", objectMapper.writeValueAsString(response));
         } catch (Exception e) {

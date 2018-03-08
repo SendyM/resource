@@ -14,7 +14,7 @@ import static com.meilitech.zhongyi.resource.util.StrUtil.isBlank;
 /**
  * json操作工具类，基于fastjson封装
  *
- * @author peiyu
+ * @author Sendy
  */
 public final class JSONUtil {
 
