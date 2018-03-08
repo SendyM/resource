@@ -1,6 +1,7 @@
 package com.meilitech.zhongyi.resource;
 
 import com.datastax.driver.core.*;
+import com.meilitech.zhongyi.resource.util.DateUtil;
 import org.junit.Test;
 
 import java.util.UUID;
@@ -28,7 +29,6 @@ public class CassandraTest {
 		 session = cluster.connect("zhongyi_db");//连接已存在的键空间
 		//session = cluster.connect();
 
-
 		/*Select select = QueryBuilder.select().all().from("resource");
 		select.where(QueryBuilder.eq("domain", "www.sznews.com"));
 		select.allowFiltering();
@@ -45,8 +45,8 @@ public class CassandraTest {
 		String query1 = "DELETE FROM resource WHERE rank=99 and ymd=1520240853 and resourceTaskId='1'and crawlerTime=1520240853 and createtime = 1520240853 and publishTime=1520240853 and updatetime = 1520240853 and resourceId=934b19e0-f186-49bb-8ea7-385937520d86;";
 
 		String query2 = "INSERT INTO url_statistics ( provider,ymd,domain,dayUpdateCount)"+
-				         "VALUES('HH','2018-03-05','www.baidu.com',12);";
-		String query3= "UPDATE url_statistics SET dayUpdateCount=dayUpdateCount+2  WHERE provider='HH'and ymd='2018-03-07'and domain='www.baidu.com';";
+				         "VALUES('inner_spider_news_01','2018-03-05','zx.jiaju.sina.com.cn',12);";
+		String query3= "UPDATE url_statistics SET dayUpdateCount=dayUpdateCount+5  WHERE provider='inner_spider_news_01'and ymd='2018-03-05'and domain='zx.jiaju.sina.com.cn';";
 
 		String query4= "SELECT  dayUpdateCount FROM  url_statistics  WHERE provider='HH'and ymd<='2018-03-07' and ymd>='2018-03-01' and domain='www.baidu.com'  ALLOW FILTERING ;";
 
@@ -56,12 +56,19 @@ public class CassandraTest {
 
 		String query6= "SELECT * FROM resource WHERE domain='www.sznews.com' AND provider='task_center' ALLOW FILTERING;";
 
-		ResultSet resultSet = session.execute(query6);
+		String startTime = DateUtil.getDate(30);
+		String endTime = DateUtil.getDate(1);
 
-		int dayUpdateCount;
-		int sum = 0;
+		String query7 = "select domain,dayUpdateCount from  url_statistics  where  ymd>='" + startTime + "' and ymd<='" + endTime + "' and domain='zx.jiaju.sina.com.cn'  allow filtering ";
+
+		String query8 = "select rank from resource where  resourceTaskId = '20180227052444757' and ymd= '2018-02-27' and crawlerTime = '1506614622000' and createTime = '1506614622000' and publishTime = '0' and updateTime= '1519723484757' and resourceId = 264d95f2-aefd-40dc-8e93-f30e4179899d   ALLOW FILTERING;";
+
+		ResultSet resultSet = session.execute(query8);
+
+		Long dayUpdateCount;
+		Long sum = 0L;
 		for (Row row : resultSet) {
-			dayUpdateCount = row.getInt("maxCrawlCount");
+			dayUpdateCount = row.getLong(1);
 			sum = sum+dayUpdateCount;
 		}
 		System.out.println(sum);

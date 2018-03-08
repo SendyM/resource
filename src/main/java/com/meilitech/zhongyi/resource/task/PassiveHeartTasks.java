@@ -16,6 +16,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestOperations;
 
+/**
+ * @author Sendy
+ */
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,8 +49,8 @@ public class PassiveHeartTasks {
         //todo
         PassiveHeartRequest passiveHeartRequest = new PassiveHeartRequest();
         PassiveHeart passiveHeart = new PassiveHeart();
-        passiveHeart.setOperationStatus("1");
-        passiveHeart.setProviderCode(providerCodes);
+        passiveHeart.setOperationStatus("");
+        passiveHeart.setProviderCode("");
         passiveHeartRequest.setData(passiveHeart);
         BaseResponse response =new BaseResponse();
 

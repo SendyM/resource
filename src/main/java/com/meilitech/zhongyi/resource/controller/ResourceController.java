@@ -13,7 +13,6 @@ import com.meilitech.zhongyi.resource.dao.ResourceDao;
 import com.meilitech.zhongyi.resource.dao.ResourceRepository;
 import com.meilitech.zhongyi.resource.dao.UrlRepository;
 import com.meilitech.zhongyi.resource.service.ResourceService;
-import com.meilitech.zhongyi.resource.util.DateUtil;
 import com.meilitech.zhongyi.resource.util.ResponseTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,11 +26,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import java.sql.Timestamp;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -170,67 +168,6 @@ public class ResourceController {
         return res;
     }
 
-    /**
-     * 获取rank值并更新到resource表
-     *
-     * @param reqMap Map
-     * @return ResponseTemplate
-     */
-    @PostMapping
-    @RequestMapping("/getRank")
-    public ResponseTemplate getRank(@RequestParam Map<String, Object> reqMap) {
-        ResponseTemplate res = new ResponseTemplate();
-        JSONObject data = (JSONObject) JSON.parse(reqMap.getOrDefault("data", new JSONObject()).toString());
-        JSONObject body = (JSONObject) data.getOrDefault("body", new JSONObject());
-        JSONObject request = (JSONObject) body.getOrDefault("request", new JSONObject());
-
-        String domain = (String) request.get("domain");
-        String provider = (String) request.get("provider");
-
-        if (domain == null || domain.isEmpty()) {
-            res.setResultCode("10001");
-            res.setResultMsg("domain不能为空！");
-            return res;
-        }
-        /*if (provider.equals(ResourceDao.Provider.TASKCENTER.toString())) {
-            res.setResultCode(SysError.IMPORT_PROVIDER_ERR);
-            return res;
-        }*/
-        if (provider == null || provider.isEmpty()) {
-            res.setResultCode("10001");
-            res.setResultMsg("provider不能为空！");
-            return res;
-        }
-
-        String startTime = DateUtil.getDate(8);
-        String endTime = DateUtil.getDate(1);
-
-        String select = "select  dayUpdateCount from  url_statistics  where  provider='"+provider+"' and ymd>='" + startTime + "' and ymd<='" + endTime + "' and domain='"+domain+"'  allow filtering ";
-        ResultSet resultSet;
-        try {
-            resultSet = cassandraTemplate.getSession().execute(select);
-        } catch (ReadFailureException e) {
-            res.setResultCode("db_err");
-            e.printStackTrace();
-            return res;
-        }
-        Long dayUpdateCount;
-        Long sum = 0L;
-        for (Row row : resultSet) {
-            dayUpdateCount = row.getLong("dayUpdateCount");
-            sum = sum + dayUpdateCount;
-        }
-        Long rank = sum / 1000000;
-        if (rank > 100) {
-            rank = 99L;
-        } else if (rank < 0) {
-            rank = 0L;
-        }
-        //todo
-        res.setResponse("rank", rank);
-
-        return res;
-    }
 
     @RequestMapping("/info/search")
     public ResponseTemplate search(@RequestParam Map<String, Object> reqMap, HttpEntity<String> httpEntity) {
@@ -255,7 +192,7 @@ public class ResourceController {
 
         do {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-            Timestamp minDate = null;
+           /* Timestamp minDate = null;
             Timestamp maxDate = null;
             try {
                 minDate = new java.sql.Timestamp(new Date(0).getTime());
@@ -265,7 +202,7 @@ public class ResourceController {
                 e.printStackTrace();
                 res.setResultCode("lastUpdateTimeErr");
                 return res;
-            }
+            }*/
 
 
             //如有分页
@@ -287,13 +224,13 @@ public class ResourceController {
                     select.where(QueryBuilder.eq("domain", domain));
                 }
             }else{
-                int rankMin = 0;
-                int rankMax = 0;
+                int rankMin;
+                int rankMax;
 
                 rankMin = Integer.valueOf((String) request.getOrDefault("rankMin", "0"));
                 rankMax = Integer.valueOf((String) request.getOrDefault("rankMax", "99"));
 
-                ArrayList rankList = new ArrayList();
+                ArrayList<Integer> rankList = new ArrayList<>();
                 for (int i = rankMin; i <= rankMax; i++) rankList.add(i);
                 select.where(QueryBuilder.in("rank", rankList));
             }

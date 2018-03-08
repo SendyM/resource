@@ -98,7 +98,7 @@ public class ResourceDao {
 
     public String  getMaxCrawlCount(){
         if(this.maxCrawlCount==null){
-            return "";
+            return "0";
         }
         return maxCrawlCount;
     }
