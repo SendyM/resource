@@ -49,8 +49,8 @@ public class PassiveHeartTasks {
         //todo
         PassiveHeartRequest passiveHeartRequest = new PassiveHeartRequest();
         PassiveHeart passiveHeart = new PassiveHeart();
-        passiveHeart.setOperationStatus("");
-        passiveHeart.setProviderCode("");
+        passiveHeart.setOperationStatus("1");
+        passiveHeart.setProviderCode(providerCodes);
         passiveHeartRequest.setData(passiveHeart);
         BaseResponse response =new BaseResponse();
 
