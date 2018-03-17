@@ -24,6 +24,9 @@ public class ResourceTaskController {
     ResourceRepository resourceRepository;
 
     @Autowired
+    ResourceDetailRepository resourceDetailRepository;
+
+    @Autowired
     ResourceStatisticsRepository resourceStatisticsRepository;
 
     @RequestMapping("/task")
@@ -67,7 +70,7 @@ public class ResourceTaskController {
         Date d1 = null;
         Date d2 = null;
         try {
-            d1 = new SimpleDateFormat("yyyyMMdd").parse("20170115");//定义起始日期
+            d1 = new SimpleDateFormat("yyyy-MM-dd").parse("2018-02-26");//定义起始日期
             d2 = new Date();//定义结束日期
         } catch (Exception e) {
             e.printStackTrace();
@@ -83,15 +86,16 @@ public class ResourceTaskController {
 
         while (dd.getTime().before(d2)) {//判断是否到结束日期
 
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
             String yyyyMMdd = sdf.format(dd.getTime());
 
             //System.out.println(yyyyMMdd);//输出日期结果
-            String[] line = new String[3];
+            String[] line = new String[4];
             List<ResourceStatisticsDao> data2 = resourceStatisticsRepository.getListByDay(yyyyMMdd);
 
             dd.add(Calendar.DATE, 1);
+            if(((ArrayList) data2).size()==0)continue;
             if (data2.get(0).getYmd() == null) continue;
             line[0] = data2.get(0).getYmd().toString();
             line[1] = data2.get(0).getDayUpdateCount().toString();
@@ -115,7 +119,7 @@ public class ResourceTaskController {
             return null;
         }
 
-        List<ResourceDao> domainList = resourceRepository.getDetailByDay(ymd);
+        List<ResourceDetailDao> domainList = resourceDetailRepository.getDetailByDay(ymd);
 
 
         HashMap<String, ArrayList<String[]>> res = new HashMap<>();

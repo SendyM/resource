@@ -20,7 +20,7 @@ import java.util.UUID;
 public class ResourceDao {
 
     public enum UrlType {
-        DOMAIN(1), LIST(3);
+        DOMAIN(1), LIST(2);
         private int urlType;
 
         UrlType(int type) {
@@ -92,17 +92,13 @@ public class ResourceDao {
     @Column("updateTime")
     private Date updateTime;
     @Column("maxCrawlCount")
-    private String maxCrawlCount;
+    private int maxCrawlCount;
+    @Column("dayUpdateCount")
+    private int dayUpdateCount;
 
-    private Long dayUpdateCount;
-
-    public String  getMaxCrawlCount(){
-        if(this.maxCrawlCount==null){
-            return "0";
-        }
+    public Integer  getMaxCrawlCount(){
         return maxCrawlCount;
     }
-
 
     public String getCharset() {
         return charset;

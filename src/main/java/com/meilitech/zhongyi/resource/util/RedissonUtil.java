@@ -1,5 +1,6 @@
 package com.meilitech.zhongyi.resource.util;
 
+import com.meilitech.zhongyi.resource.task.FtpParseTasks;
 import org.redisson.Redisson;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RedissonClient;

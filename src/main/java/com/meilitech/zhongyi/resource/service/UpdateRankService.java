@@ -74,6 +74,7 @@ public class UpdateRankService {
                             " ;";
                     log.info(query1);
                     Long rank = (Long)map.get(str)/1000000;
+                    Long dayUpdateCount = (Long)map.get(str);
                     if (rank > 100) {
                         rank = 99L;
                     } else if (rank < 0) {
@@ -83,17 +84,16 @@ public class UpdateRankService {
                     String query2 ="INSERT INTO resource ( resourceid,ymd,resourcetaskid,url,urltype,"+
                             "domain,title,keywords,description,charset,"+
                             "crawlerTime,publishTime,categoryIds,country,"+
-                            "createtime,rank,language,provider,status,updatetime,maxcrawlcount) VALUES("+
+                            "createtime,rank,language,provider,status,updatetime,maxcrawlcount,dayupdatecount) VALUES("+
                             chat.getResourceId()+",'"+chat.getYmd()+"','"+chat.getResourceTaskId()+"','"+chat.getUrl()+
                             "'," +chat.getUrlType()+",'"+chat.getDomain()+"','"+chat.getTitle()+"','"+chat.getKeywords()+
                             "','"+chat.getDescription()+"','"+chat.getCharset()+"','"+chat.getCrawlerTime().getTime()+
                             "','"+chat.getPublishTime().getTime()+"','"+chat.getCategoryIds()+"','"+chat.getCountry()+
                             "','"+chat.getCreateTime().toEpochMilli()+"',"+ rank +",'"+chat.getLanguage()+
-                            "','"+chat.getProvider()+"',"+chat.getStatus()+",'"+chat.getUpdateTime().getTime()+"',"+chat.getMaxCrawlCount()+");";
+                            "','"+chat.getProvider()+"',"+chat.getStatus()+",'"+chat.getUpdateTime().getTime()+"',"+chat.getMaxCrawlCount()+","+dayUpdateCount+");";
                     log.info(query2);
                     cassandraTemplate.getSession().execute(query2);
                 }
-
             } catch (ReadFailureException e) {
                 res.setResultCode("db_err");
                 e.printStackTrace();

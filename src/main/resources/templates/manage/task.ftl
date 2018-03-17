@@ -30,6 +30,7 @@
             <th>录入时间</th>
             <th>更新次数</th>
             </tfoot>
+            </tbody>
         </table>
     </div>
 </div>

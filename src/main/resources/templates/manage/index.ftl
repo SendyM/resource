@@ -56,6 +56,7 @@
         <iframe role="main" id="content" class="col-sm-9 ml-sm-auto col-md-10 pt-3" src="/manage/task"
                 style="border: none; height: 1315px;" name="content" class="thin-scroll"></iframe>
 
+        </iframe>
     </div>
 </div>
 </body>

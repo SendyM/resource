@@ -26,6 +26,7 @@
             <th>域名数</th>
             <th>详细</th>
             </tfoot>
+            </tbody>
         </table>
     </div>
 </div>

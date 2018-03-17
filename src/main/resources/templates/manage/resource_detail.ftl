@@ -24,11 +24,11 @@
             <th>域名</th>
             <th>日期</th>
             </tfoot>
+            </tbody>
         </table>
     </div>
 </div>
 <script>
-
     $(document).ready(function () {
 
         $('#example').DataTable({

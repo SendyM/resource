@@ -264,7 +264,7 @@ public class ResourceService {
                         continue;
                     }
 
-                    if (false && redissonUtil.contains(resource.getUrl())) {
+                    if (redissonUtil.contains(resourceDetail.getUrl())) {
                         log.warn(String.format("ignore:(%s)", read));
                         errLine++;
                         errRecord.put(line, read);
@@ -285,6 +285,7 @@ public class ResourceService {
                         resource.setPublishTime(new Date(0));
                     }
 
+                    /*
                     if (resource.getUrlType() == 0) {
                         String testUrl = resource.getUrl().replace("https://", "").replace("http://", "").replace("/", "");
                         if (testUrl.equals(resource.getDomain())) {
@@ -292,10 +293,55 @@ public class ResourceService {
                         } else {
                             //resource.setUrlType(ResourceDao.UrlType.LIST.ordinal());
                         }
+                    }*/
+
+                    //从采集中心来的，默认为Domain类型
+                    if(resource.getProvider() == ResourceDao.Provider.NEWSPRIDER.toString()){
+                        resource.setUrlType(ResourceDao.UrlType.DOMAIN.getUrlType());
+                        resource.setUrl(resource.getDomain());
+                    }else{
+                        //从调度中心来的如果文件url字段值为url型（eg:www.baidu.com/page/xx等）则为List型，否则为Domain型
+                        String url = resource.getUrl();
+                        if(url.matches("^((http://)|(https://))?([a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,6}(/)+[\\w-_/?&=#%:\\.]{1,}$")){
+                            resource.setUrlType(ResourceDao.UrlType.LIST.getUrlType());
+                        }else{
+                            resource.setUrlType(ResourceDao.UrlType.DOMAIN.getUrlType());
+                        }
                     }
 
                     if (resource.getRank() == 0) {
                         resource.setRank((int) (Math.random() * 80));
+                    }
+
+                    if (resource.getLanguage() == null) {
+                        resource.setLanguage("");
+                    }
+
+                    if(resource.getKeywords() == null){
+                        resource.setKeywords("");
+                    }
+
+                    if(resource.getDescription() == null){
+                        resource.setDescription("");
+                    }
+
+                    if(resource.getCharset() == null){
+                        resource.setCharset("");
+                    }
+
+                    if(resource.getCategoryIds() == null){
+                        resource.setCategoryIds("");
+                    }
+
+                    if(resource.getCountry() == null){
+                        resource.setCountry("");
+                    }
+
+                    //第一次插入存值0
+                    resource.setDayUpdateCount(0);
+
+                    if(resource.getMaxCrawlCount() == null){
+                        resource.setMaxCrawlCount(0);
                     }
 
                     //保存域名以及
@@ -311,7 +357,7 @@ public class ResourceService {
                     resourceDetailRepository.save(resourceDetail);
                     urlStatisticsRepository.updateCounter(resource.getDomain(), new SimpleDateFormat("yyyy-MM-dd").format(Date.from(resource.getCreateTime())), resource.getProvider());
 
-                    redissonUtil.add(resource.getUrl());
+                    redissonUtil.add(resourceDetail.getUrl());
 
                 }
                 bufread.close();
@@ -319,7 +365,7 @@ public class ResourceService {
                 if (errRecord.isEmpty()) {
                     res.setResultCode(SysError.SUCCESS);
                     res.setResponse("resourceTaskId", resourceTaskId);
-                    res.setResultMsg(String.format("跟新完成(成功:%d条,失败:%d条)", line - errLine, errLine));
+                    res.setResultMsg(String.format("更新完成(成功:%d条,失败:%d条)", line - errLine, errLine));
                 } else {
                     res.setResponse("resourceTaskId", resourceTaskId);
                     res.setResultCode(SysError.PART_SUCCESS);

@@ -24,7 +24,7 @@ public interface ResourceDetailRepository extends CrudRepository<ResourceDetailD
     @Query("SELECT ymd,count(1) as count from domain where ymd = :ymd")
     List<ResourceDetailDao> getListByDay(@Param("ymd") String ymd);
 
-    @Query("SELECT * from domain where ymd = :ymd")
+    @Query("SELECT * from resource_detail where ymd = :ymd  ALLOW FILTERING")
     List<ResourceDetailDao> getDetailByDay(@Param("ymd") String ymd);
 
 }
