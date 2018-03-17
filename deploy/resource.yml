@@ -97,3 +97,8 @@
        shell: nohup java -Dserver.port=8181 -jar ./resource-0.0.1-SNAPSHOT.jar >> logs/`date +"%Y_%m_%d.8181.log"` 2>>logs/`date +"%Y_%m_%d.8181.err"` &
        args:
           chdir: "{{dest_dir}}"
+
+     - name: start server 8081
+       shell: nohup java -Dserver.port=8081 -jar ./resource-0.0.1-SNAPSHOT.jar >> logs/`date +"%Y_%m_%d.8081.log"` 2>>logs/`date +"%Y_%m_%d.8081.err"` &
+       args:
+          chdir: "{{dest_dir}}"
