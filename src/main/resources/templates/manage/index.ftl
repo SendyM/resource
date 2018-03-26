@@ -41,6 +41,9 @@
                     <a class="nav-link active" href="/manage/task" target="content">录入批次管理 <span class="sr-only">(current)</span></a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="/domain" target="content">域名管理</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="/resource" target="content">数据源统计</a>
                 </li>
                 <li class="nav-item">

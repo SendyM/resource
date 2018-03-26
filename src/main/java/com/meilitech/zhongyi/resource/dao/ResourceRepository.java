@@ -32,4 +32,8 @@ public interface ResourceRepository extends CrudRepository<ResourceDao, Long> {
     //    select count(1) as sum from resource where ymd='2018-01-01';
     @Query("SELECT count(1)  from resource where ymd = :ymd And provider = :provider  ALLOW FILTERING")
     int countByYmdAndProvider(@Param("ymd") LocalDate ymd,@Param("provider") String provider);
-}
+
+    @Query("SELECT * from resource where domain=:domain  allow filtering")
+    List<ResourceDao> getResourceByDomain(@Param("domain") String domain);
+
+    }

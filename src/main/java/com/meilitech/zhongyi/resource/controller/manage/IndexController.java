@@ -19,6 +19,12 @@ public class IndexController {
         return "manage/index";
     }
 
+    @RequestMapping("/domain")
+    public String domain(Model model) {
+        model.addAttribute("key", "value");
+        return "manage/domain";
+    }
+
     @RequestMapping("/resource")
     public String resource(Model model) {
         model.addAttribute("key", "value");

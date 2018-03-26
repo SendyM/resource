@@ -339,6 +339,7 @@ public class ResourceService {
 
                     //第一次插入存值0
                     resource.setDayUpdateCount(0);
+                    resource.setStatus(0);
 
                     if(resource.getMaxCrawlCount() == null){
                         resource.setMaxCrawlCount(0);
@@ -387,5 +388,8 @@ public class ResourceService {
     }
 
 
+    public  List<ResourceDao> getResourceByDomain(String domain){
+      return   resourceRepository.getResourceByDomain(domain);
+    }
 }
 

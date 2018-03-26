@@ -8,10 +8,8 @@ import com.datastax.driver.core.querybuilder.Clause;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.meilitech.zhongyi.resource.constants.SysError;
-import com.meilitech.zhongyi.resource.dao.ResourceDao;
-import com.meilitech.zhongyi.resource.dao.ResourceRepository;
-import com.meilitech.zhongyi.resource.dao.UrlDao;
-import com.meilitech.zhongyi.resource.dao.UrlRepository;
+import com.meilitech.zhongyi.resource.dao.*;
+import com.meilitech.zhongyi.resource.exception.UserException;
 import com.meilitech.zhongyi.resource.service.ResourceService;
 import com.meilitech.zhongyi.resource.util.DateUtil;
 import com.meilitech.zhongyi.resource.util.FileUtil;
@@ -39,7 +37,9 @@ import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+
 import org.springframework.web.bind.annotation.RestController;
+
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -283,19 +283,20 @@ public class ResourceController {
                 break;
             }
 
-            if(!domain.isEmpty() && !urlType.isEmpty()){
+            if (!domain.isEmpty() && !urlType.isEmpty()) {
                 select.where(QueryBuilder.eq("domain", domain));
                 select.where(QueryBuilder.eq("urlType", Integer.valueOf(urlType)));
                 break;
             }
 
             if (!domain.isEmpty()) {
-                if(isLike.equals("1")) {
-                    select.where(QueryBuilder.like("domain", domain + "%"));
-                }else{
+                if (isLike.equals("1")) {
+                    select.where(QueryBuilder.like("domain", "%" + domain + "%"));
+                    break;
+                } else {
                     select.where(QueryBuilder.eq("domain", domain));
                 }
-            }else{
+            } else {
                 int rankMin = 0;
                 int rankMax = 0;
 
@@ -311,7 +312,7 @@ public class ResourceController {
             String crawlerTimeStartParams = (String) request.getOrDefault("crawlerTimeStart", "");
             String crawlerTimeEndParams = (String) request.getOrDefault("crawlerTimeEnd", "");
 
-            if(!crawlerTimeStartParams.isEmpty() && !crawlerTimeEndParams.isEmpty()) {
+            if (!crawlerTimeStartParams.isEmpty() && !crawlerTimeEndParams.isEmpty()) {
                 try {
                     select.where(QueryBuilder.gte("crawlerTime", dateFormat.parse(crawlerTimeStartParams).getTime()));
                     select.where(QueryBuilder.lte("crawlerTime", dateFormat.parse(crawlerTimeEndParams).getTime()));
@@ -326,7 +327,7 @@ public class ResourceController {
             String publishTimeStartParams = (String) request.getOrDefault("publishTimeStart", "");
             String publishTimeEndParams = (String) request.getOrDefault("publishTimeEnd", "");
 
-            if(!publishTimeStartParams.isEmpty() && !publishTimeEndParams.isEmpty()) {
+            if (!publishTimeStartParams.isEmpty() && !publishTimeEndParams.isEmpty()) {
                 try {
                     select.where(QueryBuilder.gte("publishTime", dateFormat.parse(publishTimeStartParams).getTime()));
                     select.where(QueryBuilder.lte("publishTime", dateFormat.parse(publishTimeEndParams).getTime()));
@@ -341,11 +342,11 @@ public class ResourceController {
             String lastUpdateTimeStartParams = (String) request.getOrDefault("updateTimeStart", "");
             String lastUpdateTimeEndParams = (String) request.getOrDefault("updateTimeEnd", "");
 
-            if(!lastUpdateTimeStartParams.isEmpty() && !lastUpdateTimeEndParams.isEmpty()) {
+            if (!lastUpdateTimeStartParams.isEmpty() && !lastUpdateTimeEndParams.isEmpty()) {
                 long lastUpdateTimeStart;
                 long lastUpdateTimeEnd;
                 try {
-                    lastUpdateTimeStart =  dateFormat.parse(lastUpdateTimeStartParams).getTime();
+                    lastUpdateTimeStart = dateFormat.parse(lastUpdateTimeStartParams).getTime();
                     lastUpdateTimeEnd = dateFormat.parse(lastUpdateTimeEndParams).getTime();
 
                     select.where(QueryBuilder.gte("updatetime", lastUpdateTimeStart));
@@ -359,7 +360,7 @@ public class ResourceController {
 
             String createTimeStartParams = (String) request.getOrDefault("createTimeStart", "");
             String createTimeEndParams = (String) request.getOrDefault("createTimeEnd", "");
-            if(!createTimeStartParams.isEmpty() && !createTimeEndParams.isEmpty()) {
+            if (!createTimeStartParams.isEmpty() && !createTimeEndParams.isEmpty()) {
                 long createTimeStart;
                 long createTimeEnd;
                 try {
@@ -373,6 +374,11 @@ public class ResourceController {
                     res.setResultCode("createtimeTimeErr");
                     return res;
                 }
+            }
+
+            String categoryId = (String) request.getOrDefault("categoryId", "");
+            if (!categoryId.isEmpty()) {
+                select.where(QueryBuilder.eq("categoryIds", categoryId));
             }
         } while (false);
 
@@ -407,11 +413,13 @@ public class ResourceController {
             //The number of rows that can be read without fetching
             int remaining = resultSet.getAvailableWithoutFetching();
 
-            List<ResourceDao> rList = new ArrayList<>(pageNum);
+            List<ResourceDaoVo> rList = new ArrayList<>(pageNum);
             for (Row row : resultSet) {
                 //Convert rows to chat objects
-                try{
-                    ResourceDao chat = converter.read(ResourceDao.class, row);
+                try {
+                    ResourceDaoVo chat = converter.read(ResourceDaoVo.class, row);
+
+                    chat.setCategoryId(chat.getCategoryIds());
 
                     // domainList.add(chat.getDomain());
                     //日更量
@@ -426,8 +434,7 @@ public class ResourceController {
                     */
 
                     rList.add(chat);
-
-                }catch (NullPointerException e){
+                } catch (NullPointerException e) {
                     e.printStackTrace();
                 }
 
@@ -455,4 +462,121 @@ public class ResourceController {
     }
 
 
+    //用于采集征文推送完成
+    @RequestMapping("/contentEndApi")
+    @ResponseBody
+    public String contentEndApi(@RequestParam Map<String, Object> reqMap, HttpEntity<String> httpEntity) {
+
+        Map<String, Object> map = new HashMap<String, Object>();
+
+        File dir = new File(env.getProperty("resource.data.path") + "xdth_text_domain/");
+        File[] filesList = dir.listFiles();
+        if (filesList == null) {
+            log.info("no file,skip:" + dir.getAbsolutePath());
+            return "error";
+        }
+
+        for (File file : filesList) {
+            if (!file.isFile()) continue;
+            if (file.getName().matches(".*\\.done") || file.getName().matches(".*\\.fail") || file.getName().matches(".*\\.dict")) {
+                log.debug("ignore:" + file.getAbsolutePath());
+                continue;
+            }
+
+            do {
+                try {
+                    doCategory(file.getAbsolutePath());
+                } catch (UserException e) {
+                    File newFile = new File(file.getAbsoluteFile() + ".fail");
+                    file.renameTo(newFile);
+                    log.warn(file.getAbsoluteFile() + ".fail");
+                    continue;
+                } catch (Exception e) {
+                    File newFile = new File(file.getAbsoluteFile() + ".fail");
+                    file.renameTo(newFile);
+                    log.warn(file.getAbsoluteFile() + ".fail");
+                    continue;
+                }
+
+                File newFile = new File(file.getAbsoluteFile() + ".done");
+                file.renameTo(newFile);
+                return "success";
+            } while (false);
+        }
+        return "success";
+    }
+
+    private ResponseTemplate doCategory(String filePath) {
+        ResponseTemplate res = new ResponseTemplate();
+
+        do {
+            String sourceDataPath = filePath;
+            File conentFile = new File(sourceDataPath);
+            if (!conentFile.exists()) {
+                res.setResultCode(SysError.SUCCESS);
+                res.setResultMsg("文件不存在:" + sourceDataPath);
+                break;
+            }
+
+            try {
+                File file = new File(sourceDataPath);
+                filePath = file.getAbsolutePath();
+                if (file.exists()) {
+                    String pyPath = env.getProperty("python.command.path") + " " + env.getProperty("category.command.path") + "/main_run.py zyyt test_one "+filePath;
+                    //提取特征资料
+
+
+                    //预测网站类型
+                    Process p = Runtime.getRuntime().exec(pyPath);
+                    BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                    String ret = "";
+                    String input = null;
+                    while ((input = in.readLine()) != null) {
+                        ret = ret + input;
+                    }
+
+
+
+                    String domain = file.getName();
+
+                    System.out.println("pythoy------------ output is : " + ret);
+                    log.info(domain,":python run result:", res);
+
+
+
+                    List<ResourceDao> list = resourceService.getResourceByDomain(domain);
+                    if (list != null && list.size() > 0) {
+                        for (int i = 0; i < list.size(); i++) {
+                            ResourceDao resourceDao = list.get(i);
+
+                            if (ret.contains("ok 1")) {
+                                resourceDao.setCategoryIds("1");
+                                resourceRepository.save(resourceDao);
+                            } else if (ret.contains("ok -1")) {
+                                resourceDao.setCategoryIds("-1");
+                                resourceRepository.save(resourceDao);
+                            } else if (ret.contains("ok 0")) {
+                                resourceDao.setCategoryIds("0");
+                                resourceRepository.save(resourceDao);
+                            }
+                        }
+
+                    }
+                } else {
+                    log.warn(filePath + ", not exists!");
+                }
+
+            } catch (FileNotFoundException ex) {
+                ex.printStackTrace();
+                throw new UserException(SysError.IMPORT_ERR, ex.getMessage());
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                throw new UserException(SysError.IMPORT_ERR, ex.getMessage());
+            }
+
+            return res;
+        } while (false);
+
+        return res;
+    }
 }

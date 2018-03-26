@@ -17,7 +17,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(value = "resource")
-public class ResourceDao {
+public class ResourceDaoVo {
 
     public enum UrlType {
         DOMAIN(1), LIST(2);
@@ -110,6 +110,7 @@ public class ResourceDao {
     @Column("dayUpdateCount")
     private int dayUpdateCount;
 
+    private String categoryId;
     public Integer  getMaxCrawlCount(){
         return maxCrawlCount;
     }
@@ -174,6 +175,13 @@ public class ResourceDao {
         this.categoryIds = categoryIds;
     }
 
+    public String getCategoryId() {
+        return categoryIds;
+    }
+
+    public void setCategoryId(String categoryIds) {
+        this.categoryIds = categoryIds;
+    }
 
     public String getCountry() {
         return country;
