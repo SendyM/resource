@@ -1,18 +1,11 @@
 package com.meilitech.zhongyi.resource.task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.meilitech.zhongyi.resource.api.entity.PassiveHeart;
-import com.meilitech.zhongyi.resource.api.enums.ResultType;
-import com.meilitech.zhongyi.resource.api.request.PassiveHeartRequest;
-import com.meilitech.zhongyi.resource.api.response.BaseResponse;
 import com.meilitech.zhongyi.resource.util.HttpUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestOperations;
@@ -45,32 +38,28 @@ public class PassiveHeartTasks {
         String data ="data={\"providerCode\":\"SOURCE_IMPORT_001,SOURCE_SEARCH_001,SOURCE_SEARCH_002,SOURCE_IMPORT_002,SOURCE_SEARCH_003,SOURCE_IMPORT_003\",\"operationStatus\":\"1\"}";
 
         String returnString = HttpUtil.post(heartUrl,data);
-        System.out.println("心跳返回数据:"+returnString);
 
         log.info("心跳返回数据：{}", returnString);
 
+       /* PassiveHeartRequest passiveHeartRequest = new PassiveHeartRequest();
+        PassiveHeart passiveHeart = new PassiveHeart();
+        passiveHeart.setOperationStatus("1");
+        passiveHeart.setProviderCode("SOURCE_IMPORT_001,SOURCE_SEARCH_001,SOURCE_SEARCH_002,SOURCE_IMPORT_002,SOURCE_SEARCH_003,SOURCE_IMPORT_003");
+        passiveHeartRequest.setData(passiveHeart);
+        BaseResponse response =new BaseResponse();
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType( MediaType.APPLICATION_JSON);
+            HttpEntity<Object> formEntity = new HttpEntity<>( passiveHeartRequest, headers );
+            log.info("心跳请求数据：{}", objectMapper.writeValueAsString(passiveHeartRequest));
+            String msg = restTemplate.postForObject(heartUrl,formEntity, String.class);
+            response.setErrmsg( msg );
+            response.setErrcode( ResultType.SUCCESS.getCode().toString() );
+            log.info("心跳返回数据：{}", objectMapper.writeValueAsString(response));
+        } catch (Exception e) {
+            log.info("心跳请求返回结果异常：{}", e);
+        }*/
 
-
-//        PassiveHeartRequest passiveHeartRequest = new PassiveHeartRequest();
-//        PassiveHeart passiveHeart = new PassiveHeart();
-//        passiveHeart.setOperationStatus("1");
-//        passiveHeart.setProviderCode("SOURCE_IMPORT_001,SOURCE_SEARCH_001,SOURCE_SEARCH_002,SOURCE_IMPORT_002,SOURCE_SEARCH_003,SOURCE_IMPORT_003");
-//        passiveHeart.setData(data);
-//        passiveHeartRequest.setData(passiveHeart);
-//        BaseResponse response =new BaseResponse();
-//        try {
-//            HttpHeaders headers = new HttpHeaders();
-//            headers.setContentType( MediaType.APPLICATION_JSON);
-//            HttpEntity<Object> formEntity = new HttpEntity<>( passiveHeartRequest, headers );
-//            log.info("心跳请求数据：{}", objectMapper.writeValueAsString(passiveHeartRequest));
-//            String msg = restTemplate.postForObject(heartUrl,formEntity, String.class);
-//
-//            response.setErrmsg( msg );
-//            response.setErrcode( ResultType.SUCCESS.getCode().toString() );
-//           // log.info("心跳返回数据：{}", objectMapper.writeValueAsString(response));
-//        } catch (Exception e) {
-//            log.info("心跳请求返回结果异常：{}", e);
-//        }
     }
 
 

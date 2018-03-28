@@ -1,32 +1,25 @@
 package com.meilitech.zhongyi.resource.task;
 
 import com.meilitech.zhongyi.resource.constants.SysError;
-import com.meilitech.zhongyi.resource.dao.ResourceDao;
-import com.meilitech.zhongyi.resource.dao.ResourceDetailDao;
 import com.meilitech.zhongyi.resource.dao.ResourceRepository;
 import com.meilitech.zhongyi.resource.exception.UserException;
 import com.meilitech.zhongyi.resource.service.ResourceService;
 import com.meilitech.zhongyi.resource.util.FileUtil;
 import com.meilitech.zhongyi.resource.util.RedissonUtil;
-import com.meilitech.zhongyi.resource.util.ResponseTemplate;
-import com.meilitech.zhongyi.resource.util.ToolsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 @Component
 public class CategoryTasks {
@@ -49,8 +42,10 @@ public class CategoryTasks {
      */
     @Scheduled(fixedDelay = 5000)
     public void parse() {
+        String address = env.getProperty("resource.redis.address");
 
-        redissonUtil = new RedissonUtil(RedissonUtil.BF_RESOURCE, true);
+        redissonUtil = new RedissonUtil(RedissonUtil.BF_RESOURCE, true,address);
+
         Map<String, Object> map = new HashMap<String, Object>();
 
         File dir = new File(env.getProperty("resource.data.path") + "xdth_text/");

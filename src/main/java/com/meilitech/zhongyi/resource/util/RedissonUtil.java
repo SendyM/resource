@@ -1,6 +1,5 @@
 package com.meilitech.zhongyi.resource.util;
 
-import com.meilitech.zhongyi.resource.task.FtpParseTasks;
 import org.redisson.Redisson;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RedissonClient;
@@ -26,6 +25,11 @@ public class RedissonUtil {
     public RedissonUtil(String bloomFilterName, boolean createIfNoExists) {
         this.bloomFilterName = bloomFilterName;
         init(bloomFilterName, 100_000_000, 0.03, createIfNoExists);
+    }
+
+    public RedissonUtil(String bloomFilterName, boolean createIfNoExists,String redisAddress) {
+        this.bloomFilterName = bloomFilterName;
+        init(bloomFilterName, 100_000_000, 0.03, createIfNoExists,redisAddress);
     }
 
     private void init(String bloomFilterName, long l, double v, boolean createIfNoExists) {
@@ -56,6 +60,34 @@ public class RedissonUtil {
         }
     }
 
+
+    private void init(String bloomFilterName, long l, double v, boolean createIfNoExists,String redisAddress) {
+
+        // connects to 127.0.0.1:6379 by default
+        if (redissonClient == null) {
+            Config config = new Config();
+            config.useSingleServer().setAddress(redisAddress);
+            redissonClient = Redisson.create(config);
+        }
+
+
+        if (bloomFilterMap.containsKey(bloomFilterName) && bloomFilterMap.get(bloomFilterName) == null) {
+            RBloomFilter<String> bloomFilter = redissonClient.getBloomFilter(bloomFilterName);
+            bloomFilter.tryInit(l, v);
+            bloomFilterMap.put(bloomFilterName, bloomFilter);
+        }
+
+        if (!bloomFilterMap.containsKey(bloomFilterName) && createIfNoExists) {
+            RBloomFilter<String> bloomFilter = redissonClient.getBloomFilter(bloomFilterName);
+            bloomFilter.tryInit(l, v);
+            bloomFilterMap.put(bloomFilterName, bloomFilter);
+        }
+
+
+        if (!bloomFilterMap.get(bloomFilterName).isExists()) {
+            //log.error("bloomFilter init error");
+        }
+    }
 
     public boolean add(String val) {
         return bloomFilterMap.get(bloomFilterName).add(val);

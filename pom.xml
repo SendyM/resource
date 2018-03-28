@@ -149,18 +149,16 @@
                 </includes>
                 <filtering>true</filtering>
             </resource>
-    </resources>
-    <plugins>
-        <plugin>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-maven-plugin</artifactId>
-            <configuration>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
                 <!--<fork>true</fork>-->
                 <executable>true</executable>
-            </configuration>
-        </plugin>
-    </plugins>
-</build>
-
-
-        </project>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

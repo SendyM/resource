@@ -10,6 +10,7 @@ import com.meilitech.zhongyi.resource.util.ToolsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -45,7 +46,13 @@ public class ResourceService {
             "provider",
             "status",
             "updateTime"};
-    RedissonUtil redissonUtil = new RedissonUtil(RedissonUtil.BF_RESOURCE, true);
+
+    @Autowired
+    Environment env;
+
+    //private String address = env.getProperty("resource.redis.address");
+
+    //private RedissonUtil redissonUtil = new RedissonUtil(RedissonUtil.BF_RESOURCE, true);
 
     ResourceService() {
         System.out.print(1);
@@ -61,6 +68,9 @@ public class ResourceService {
     private ResourceDetailRepository resourceDetailRepository;
 
     public ResponseTemplate importFromFile(String filePath, String provider) {
+
+        String address = env.getProperty("resource.redis.address");
+        RedissonUtil redissonUtil = new RedissonUtil(RedissonUtil.BF_RESOURCE, true,address);
         ResponseTemplate res = new ResponseTemplate();
 
         do {
